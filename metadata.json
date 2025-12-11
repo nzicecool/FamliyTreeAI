@@ -1,0 +1,5 @@
+{
+  "name": "FamilyTreeAI",
+  "description": "A SaaS-ready family tree builder powered by Gemini 2.5. Features intelligent record parsing, AI biography generation, and interactive D3 visualizations.",
+  "requestFramePermissions": []
+}
