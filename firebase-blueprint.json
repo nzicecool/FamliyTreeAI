@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["id", "name", "email", "photoUrl", "role"]
+    },
+    "Person": {
+      "title": "Person",
+      "description": "A member of the family tree",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "birthDate": { "type": "string" },
+        "birthPlace": { "type": "string" },
+        "deathDate": { "type": "string" },
+        "deathPlace": { "type": "string" },
+        "bio": { "type": "string" },
+        "photo": { "type": "string" },
+        "fatherId": { "type": "string" },
+        "motherId": { "type": "string" },
+        "spouseIds": { "type": "array", "items": { "type": "string" } },
+        "childrenIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "firstName", "lastName", "gender", "spouseIds", "childrenIds"]
+    },
+    "TreeMeta": {
+      "title": "Tree Metadata",
+      "description": "Metadata for the user's family tree",
+      "type": "object",
+      "properties": {
+        "rootId": { "type": "string" }
+      },
+      "required": ["rootId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/people/{personId}": {
+      "schema": "Person",
+      "description": "Collection of people in the user's family tree"
+    },
+    "/users/{userId}/meta/tree": {
+      "schema": "TreeMeta",
+      "description": "Tree metadata for the user"
+    }
+  }
+}

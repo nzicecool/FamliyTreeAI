@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Person, Gender } from '../types';
 import { generateBio } from '../services/geminiService';
-import { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon } from 'lucide-react';
+import { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon, Network } from 'lucide-react';
 
 interface EditorPanelProps {
   person: Person | null;
   onSave: (person: Person) => void;
+  onDelete: (id: string) => void;
+  onSetRoot: (id: string) => void;
   onCancel: () => void;
   allPeople: Person[];
 }
 
-export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCancel, allPeople }) => {
+export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDelete, onSetRoot, onCancel, allPeople }) => {
   const [formData, setFormData] = useState<Partial<Person>>({
     gender: Gender.Male,
     firstName: '',
     lastName: '',
     spouseIds: [],
     childrenIds: [],
+    fatherId: null,
+    motherId: null,
   });
   
   const [generatingBio, setGeneratingBio] = useState(false);
@@ -38,6 +42,8 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCanc
         birthPlace: '',
         deathPlace: '',
         photo: '',
+        fatherId: null,
+        motherId: null,
       });
     }
   }, [person]);
@@ -258,6 +264,41 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCanc
         </div>
 
         {/* Relationships */}
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Father</label>
+                <select 
+                    className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white outline-none text-sm"
+                    value={formData.fatherId || ""}
+                    onChange={(e) => handleChange('fatherId', e.target.value || null)}
+                >
+                    <option value="">Unknown / None</option>
+                    {allPeople
+                        .filter(p => p.id !== formData.id && p.gender === Gender.Male)
+                        .map(p => (
+                            <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+                        ))
+                    }
+                </select>
+            </div>
+            <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Mother</label>
+                <select 
+                    className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white outline-none text-sm"
+                    value={formData.motherId || ""}
+                    onChange={(e) => handleChange('motherId', e.target.value || null)}
+                >
+                    <option value="">Unknown / None</option>
+                    {allPeople
+                        .filter(p => p.id !== formData.id && p.gender === Gender.Female)
+                        .map(p => (
+                            <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+                        ))
+                    }
+                </select>
+            </div>
+        </div>
+
         <div className="space-y-3">
             <label className="block text-xs font-medium text-slate-400">Spouses / Partners</label>
             <div className="flex gap-2">
@@ -313,6 +354,30 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCanc
 
         {/* Actions */}
         <div className="pt-4 flex items-center gap-3 border-t border-slate-700">
+          {person && (
+            <>
+              <button
+                type="button"
+                onClick={() => onSetRoot(person.id)}
+                className="bg-slate-700 hover:bg-brand-600 text-white p-2 rounded-lg transition-colors"
+                title="Set as Tree Root"
+              >
+                <Network size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to delete ${person.firstName} ${person.lastName}?`)) {
+                    onDelete(person.id);
+                  }
+                }}
+                className="bg-slate-700 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
+                title="Delete Record"
+              >
+                <Trash2 size={20} />
+              </button>
+            </>
+          )}
           <button
             type="submit"
             className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2"

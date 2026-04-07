@@ -78,7 +78,10 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
     if (!root) return { nodes: [], links: [] };
 
     // Create a tree layout
-    const treeLayout = d3.tree().size([dimensions.width - 100, dimensions.height - 100]);
+    const treeLayout = d3.tree().size([
+      Math.max(100, dimensions.width - 100), 
+      Math.max(100, dimensions.height - 100)
+    ]);
     treeLayout(root);
 
     return {

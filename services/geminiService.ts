@@ -4,7 +4,7 @@ import { Person, Gender } from '../types';
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const modelName = 'gemini-2.5-flash';
+const modelName = 'gemini-3-flash-preview';
 
 export const generateBio = async (person: Person): Promise<string> => {
   const prompt = `

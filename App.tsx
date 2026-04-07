@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { NAV_ITEMS } from './constants';
 import { TreeData, Person, ViewMode, Gender } from './types';
 import { TreeVisualizer } from './components/TreeVisualizer';
@@ -8,10 +8,56 @@ import { LoginScreen } from './components/LoginScreen';
 import { authService, User } from './services/authService';
 import { storageService } from './services/storageService';
 import { generateGedcom } from './services/gedcomService';
-import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download } from 'lucide-react';
+import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 
-function App() {
+// Error Boundary Component
+class ErrorBoundary extends (React.Component as any) {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong.";
+      try {
+        const parsedError = JSON.parse(this.state.error?.message || "");
+        if (parsedError.error) {
+          errorMessage = `Firestore Error: ${parsedError.error} during ${parsedError.operationType} on ${parsedError.path}`;
+        }
+      } catch (e) {
+        errorMessage = this.state.error?.message || errorMessage;
+      }
+
+      return (
+        <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-200 p-6 text-center">
+          <AlertTriangle size={48} className="text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Oops! An error occurred</h1>
+          <p className="text-slate-400 mb-6 max-w-md">{errorMessage}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Reload Application
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -23,15 +69,18 @@ function App() {
 
   // Initialize Auth
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-    setLoading(false);
+    const unsubscribe = authService.onAuthStateChange((currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Initialize Data when User is present
   useEffect(() => {
     if (user) {
       loadData();
+      storageService.testConnection();
     }
   }, [user]);
 
@@ -50,66 +99,152 @@ function App() {
   const handleSavePerson = async (updatedPerson: Person) => {
     if (!treeData) return;
 
-    // Get the previous version of this person (if exists) to check for removed spouses
     const oldPerson = treeData.people[updatedPerson.id];
     const oldSpouseIds = oldPerson ? oldPerson.spouseIds : [];
     const newSpouseIds = updatedPerson.spouseIds;
-
-    // 1. Identify Removed Spouses: IDs in old but not in new
     const removedSpouseIds = oldSpouseIds.filter(id => !newSpouseIds.includes(id));
-    
-    // 2. Identify Added Spouses: IDs in new but not in old
     const addedSpouseIds = newSpouseIds.filter(id => !oldSpouseIds.includes(id));
+
+    const oldFatherId = oldPerson ? oldPerson.fatherId : null;
+    const newFatherId = updatedPerson.fatherId;
+    const oldMotherId = oldPerson ? oldPerson.motherId : null;
+    const newMotherId = updatedPerson.motherId;
 
     // Optimistic Update
     setTreeData(prev => {
       if (!prev) return null;
       const newData = { ...prev };
-      
-      // Update Main Person
       newData.people[updatedPerson.id] = updatedPerson;
       
-      // Update Parent links (Children pointers)
-      if (updatedPerson.fatherId && newData.people[updatedPerson.fatherId]) {
-         const father = newData.people[updatedPerson.fatherId];
-         if (!father.childrenIds.includes(updatedPerson.id)) {
-            father.childrenIds = [...father.childrenIds, updatedPerson.id];
-            storageService.savePerson(father); // Background save
-         }
-      }
-      if (updatedPerson.motherId && newData.people[updatedPerson.motherId]) {
-         const mother = newData.people[updatedPerson.motherId];
-         if (!mother.childrenIds.includes(updatedPerson.id)) {
-            mother.childrenIds = [...mother.childrenIds, updatedPerson.id];
-            storageService.savePerson(mother); // Background save
-         }
+      if (oldFatherId !== newFatherId) {
+          if (oldFatherId && newData.people[oldFatherId]) {
+              const oldFather = { ...newData.people[oldFatherId] };
+              oldFather.childrenIds = oldFather.childrenIds.filter(id => id !== updatedPerson.id);
+              newData.people[oldFatherId] = oldFather;
+              storageService.savePerson(oldFather);
+          }
+          if (newFatherId && newData.people[newFatherId]) {
+              const newFather = { ...newData.people[newFatherId] };
+              if (!newFather.childrenIds.includes(updatedPerson.id)) {
+                  newFather.childrenIds = [...newFather.childrenIds, updatedPerson.id];
+                  newData.people[newFatherId] = newFather;
+                  storageService.savePerson(newFather);
+              }
+          }
       }
 
-      // Handle Reciprocal Spouse Unlinking
+      if (oldMotherId !== newMotherId) {
+          if (oldMotherId && newData.people[oldMotherId]) {
+              const oldMother = { ...newData.people[oldMotherId] };
+              oldMother.childrenIds = oldMother.childrenIds.filter(id => id !== updatedPerson.id);
+              newData.people[oldMotherId] = oldMother;
+              storageService.savePerson(oldMother);
+          }
+          if (newMotherId && newData.people[newMotherId]) {
+              const newMother = { ...newData.people[newMotherId] };
+              if (!newMother.childrenIds.includes(updatedPerson.id)) {
+                  newMother.childrenIds = [...newMother.childrenIds, updatedPerson.id];
+                  newData.people[newMotherId] = newMother;
+                  storageService.savePerson(newMother);
+              }
+          }
+      }
+
       removedSpouseIds.forEach(exSpouseId => {
           const exSpouse = newData.people[exSpouseId];
           if (exSpouse) {
-              exSpouse.spouseIds = exSpouse.spouseIds.filter(id => id !== updatedPerson.id);
-              storageService.savePerson(exSpouse);
+              const updatedEx = { ...exSpouse };
+              updatedEx.spouseIds = updatedEx.spouseIds.filter(id => id !== updatedPerson.id);
+              newData.people[exSpouseId] = updatedEx;
+              storageService.savePerson(updatedEx);
           }
       });
 
-      // Handle Reciprocal Spouse Linking
       addedSpouseIds.forEach(newSpouseId => {
           const newSpouse = newData.people[newSpouseId];
           if (newSpouse && !newSpouse.spouseIds.includes(updatedPerson.id)) {
-              newSpouse.spouseIds = [...newSpouse.spouseIds, updatedPerson.id];
-              storageService.savePerson(newSpouse);
+              const updatedNew = { ...newSpouse };
+              updatedNew.spouseIds = [...updatedNew.spouseIds, updatedPerson.id];
+              newData.people[newSpouseId] = updatedNew;
+              storageService.savePerson(updatedNew);
           }
       });
 
       return newData;
     });
 
-    // Persist Main Person to DB
     await storageService.savePerson(updatedPerson);
-
     setSelectedPersonId(null);
+    setActiveView('tree');
+  };
+
+  const handleDeletePerson = async (id: string) => {
+    if (!treeData) return;
+
+    const personToDelete = treeData.people[id];
+    if (!personToDelete) return;
+
+    setTreeData(prev => {
+      if (!prev) return null;
+      const newData = { ...prev };
+      
+      personToDelete.spouseIds.forEach(sid => {
+          const spouse = newData.people[sid];
+          if (spouse) {
+              const updatedSpouse = { ...spouse };
+              updatedSpouse.spouseIds = updatedSpouse.spouseIds.filter(pid => pid !== id);
+              newData.people[sid] = updatedSpouse;
+              storageService.savePerson(updatedSpouse);
+          }
+      });
+
+      if (personToDelete.fatherId && newData.people[personToDelete.fatherId]) {
+          const father = { ...newData.people[personToDelete.fatherId] };
+          father.childrenIds = father.childrenIds.filter(cid => cid !== id);
+          newData.people[personToDelete.fatherId] = father;
+          storageService.savePerson(father);
+      }
+      if (personToDelete.motherId && newData.people[personToDelete.motherId]) {
+          const mother = { ...newData.people[personToDelete.motherId] };
+          mother.childrenIds = mother.childrenIds.filter(cid => cid !== id);
+          newData.people[personToDelete.motherId] = mother;
+          storageService.savePerson(mother);
+      }
+
+      personToDelete.childrenIds.forEach(cid => {
+          const child = newData.people[cid];
+          if (child) {
+              const updatedChild = { ...child };
+              if (updatedChild.fatherId === id) updatedChild.fatherId = null;
+              if (updatedChild.motherId === id) updatedChild.motherId = null;
+              newData.people[cid] = updatedChild;
+              storageService.savePerson(updatedChild);
+          }
+      });
+
+      delete newData.people[id];
+
+      if (newData.rootId === id) {
+          const remainingIds = Object.keys(newData.people);
+          const newRootId = remainingIds.length > 0 ? remainingIds[0] : '';
+          newData.rootId = newRootId;
+          if (newRootId) storageService.saveTreeMeta(newRootId);
+      }
+
+      return newData;
+    });
+
+    await storageService.deletePerson(id);
+    setSelectedPersonId(null);
+    setActiveView('tree');
+  };
+
+  const handleSetRoot = async (id: string) => {
+    setTreeData(prev => {
+        if (!prev) return null;
+        return { ...prev, rootId: id };
+    });
+    await storageService.saveTreeMeta(id);
     setActiveView('tree');
   };
 
@@ -130,7 +265,6 @@ function App() {
       motherId: null,
     };
     
-    // Optimistic update
     setTreeData(prev => {
         if(!prev) return null;
         return {
@@ -139,9 +273,7 @@ function App() {
         }
     });
 
-    // Save to DB immediately so it exists for editing
     await storageService.savePerson(newPerson);
-
     setSelectedPersonId(newPerson.id);
     setActiveView('editor');
   };
@@ -185,7 +317,7 @@ function App() {
   }
 
   if (!user) {
-    return <LoginScreen onLogin={() => setUser(authService.getCurrentUser())} />;
+    return <LoginScreen onLogin={() => {}} />;
   }
 
   if (!treeData) {
@@ -273,7 +405,7 @@ function App() {
                 <div className="flex items-center gap-3 pr-4 border-r border-slate-800">
                    <div className="text-right hidden sm:block">
                        <div className="text-sm font-medium text-white">{user.name}</div>
-                       <div className="text-xs text-slate-400">Free Plan</div>
+                       <div className="text-xs text-slate-400">{user.role === 'admin' ? 'Admin' : 'Free Plan'}</div>
                    </div>
                    <img src={user.photoUrl} alt="User" className="w-8 h-8 rounded-full border border-slate-600" />
                 </div>
@@ -297,6 +429,8 @@ function App() {
                     <EditorPanel 
                         person={selectedPersonId ? treeData.people[selectedPersonId] : null} 
                         onSave={handleSavePerson}
+                        onDelete={handleDeletePerson}
+                        onSetRoot={handleSetRoot}
                         onCancel={() => setActiveView('tree')}
                         allPeople={peopleList}
                     />
@@ -311,6 +445,14 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
   );
 }
 

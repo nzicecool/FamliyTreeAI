@@ -1,101 +1,162 @@
-
+import { db, auth } from '../firebase';
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  deleteDoc, 
+  query, 
+  onSnapshot,
+  getDocFromServer
+} from 'firebase/firestore';
 import { Person, TreeData } from '../types';
 import { INITIAL_DATA } from '../constants';
 
-const DB_NAME = 'FamilyTreeAI_DB';
-const DB_VERSION = 1;
-const STORE_NAME = 'people';
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
 
-// Helper to open database
-const openDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
 
-    request.onerror = () => reject(request.error);
-    
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-
-    request.onsuccess = () => resolve(request.result);
-  });
-};
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export const storageService = {
   // Load all people to reconstruct the tree
   async loadTree(): Promise<TreeData> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
+    const userId = auth.currentUser?.uid;
+    if (!userId) throw new Error("User not authenticated");
 
-      request.onsuccess = () => {
-        const peopleList = request.result as Person[];
-        
-        // If DB is empty, seed it with initial data
-        if (peopleList.length === 0) {
-          this.seedData().then(resolve).catch(reject);
-        } else {
-          // Convert array back to Record<string, Person>
-          const peopleMap: Record<string, Person> = {};
-          peopleList.forEach(p => peopleMap[p.id] = p);
-          
-          resolve({
-            rootId: '1', // In a real app, this might be stored in a separate 'meta' store
-            people: peopleMap
-          });
-        }
-      };
+    const path = `users/${userId}/people`;
+    try {
+      const q = query(collection(db, path));
+      const querySnapshot = await getDocs(q);
+      const peopleMap: Record<string, Person> = {};
       
-      request.onerror = () => reject(request.error);
-    });
+      querySnapshot.forEach((doc) => {
+        peopleMap[doc.id] = doc.data() as Person;
+      });
+
+      // If empty, seed with initial data
+      if (Object.keys(peopleMap).length === 0) {
+        return this.seedData(userId);
+      }
+
+      // Load meta for rootId
+      const metaPath = `users/${userId}/meta/tree`;
+      const metaDoc = await getDoc(doc(db, metaPath));
+      const rootId = metaDoc.exists() ? metaDoc.data().rootId : Object.keys(peopleMap)[0];
+
+      return {
+        rootId,
+        people: peopleMap
+      };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return { rootId: '', people: {} }; // Unreachable due to throw
+    }
   },
 
   // Save or Update a single person
   async savePerson(person: Person): Promise<void> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(person);
+    const userId = auth.currentUser?.uid;
+    if (!userId) throw new Error("User not authenticated");
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    const path = `users/${userId}/people/${person.id}`;
+    try {
+      await setDoc(doc(db, `users/${userId}/people`, person.id), person);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  // Delete a person
+  async deletePerson(id: string): Promise<void> {
+    const userId = auth.currentUser?.uid;
+    if (!userId) throw new Error("User not authenticated");
+
+    const path = `users/${userId}/people/${id}`;
+    try {
+      await deleteDoc(doc(db, `users/${userId}/people`, id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  // Save tree metadata
+  async saveTreeMeta(rootId: string): Promise<void> {
+    const userId = auth.currentUser?.uid;
+    if (!userId) throw new Error("User not authenticated");
+
+    const path = `users/${userId}/meta/tree`;
+    try {
+      await setDoc(doc(db, path), { rootId });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
   },
 
   // Seed initial data if empty
-  async seedData(): Promise<TreeData> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      const people = Object.values(INITIAL_DATA.people);
-      let completed = 0;
-
-      people.forEach(person => {
-        store.put(person);
-        completed++;
-      });
-
-      transaction.oncomplete = () => resolve(INITIAL_DATA);
-      transaction.onerror = () => reject(transaction.error);
-    });
+  async seedData(userId: string): Promise<TreeData> {
+    const people = Object.values(INITIAL_DATA.people);
+    for (const person of people) {
+      await this.savePerson(person);
+    }
+    await this.saveTreeMeta(INITIAL_DATA.rootId);
+    return INITIAL_DATA;
   },
-  
-  // Clear database (helper for debugging/logout if needed)
-  async clearDatabase(): Promise<void> {
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-          const transaction = db.transaction(STORE_NAME, 'readwrite');
-          const store = transaction.objectStore(STORE_NAME);
-          store.clear();
-          transaction.oncomplete = () => resolve();
-      });
+
+  // Validate connection
+  async testConnection() {
+    try {
+      await getDocFromServer(doc(db, 'test', 'connection'));
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('the client is offline')) {
+        console.error("Please check your Firebase configuration.");
+      }
+    }
   }
 };

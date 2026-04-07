@@ -1,0 +1,862 @@
+[
+  {
+    "id": 0,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Help me build a software that keeps records of family trees. Do a bit of a research as to what's the best method to build this application 1st and then build one as a SaaS app.\n\nFirst come up with the plan and then let's decide which path to take. ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764644969952
+  },
+  {
+    "id": 1,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Outlining the Project.**\n\nI've begun outlining the scope of the family tree application, focusing on the core functionalities requested.  I am actively researching best practices for integrating the Gemini API, React, TypeScript, and Tailwind CSS.  My plan is to detail the user interface architecture for optimal data visualization and user experience.\n\n\n**Refining the Implementation**\n\nI've shifted my focus to code implementation, specifically exploring how to leverage `d3` for the family tree visualization. Key constraints include using `@google/genai` with an environment variable for the API key, and ensuring a single XML block response for the project structure. Design-wise, I'm aiming for a SaaS-like, responsive, mobile-first aesthetic. To handle data persistence in this frontend-only demo, `localStorage` seems like the most straightforward solution. Finally, I'm considering how Gemini can enhance the user experience by generating stories or suggesting relationships.\n\n\n**Choosing Data Structures**\n\nI've been examining different data structures for representing the family tree within the app. I considered GEDCOM, but it seems a bit complex for this demo. Instead, I'm leaning toward a JSON graph format with an array of \"Person\" objects, each with their own ID, and parent ID. Also, I'm exploring D3.js's capabilities to customize layouts for this project.\n\n\n**Finalizing Data Structure**\n\nMy initial thought was to use a JSON graph, with person objects holding `spouseId` and `childrenIds`. This is proving the easiest way to manage data, and later convert to a D3 hierarchical structure. Also, I have a plan for SaaS value with AI features, including an AI genealogist chat, bio generator, and smart input. Finally, my architecture includes state management with a `FamilyTreeContext`, components such as `TreeView` and `PersonNode`, and services for Gemini and tree utility logic.\n\n\n**Building the Visualization**\n\nI've transitioned from the conceptual design into implementing the React components and D3 integration. I'm focusing on the \"Tidy Tree\" layout for the family tree visualization, which aligns with industry best practices. I'm leveraging `d3`'s capabilities to handle the hierarchical data, and writing code in TypeScript, with Tailwind CSS for styling. I've chosen `lucide-react` for icons and `clsx` and `tailwind-merge` for utility. The app will be called \"Roots & Branches AI\".\n\n\n**Structuring the Relationships**\n\nMy current focus is defining the relationships within the family tree data. While D3 works best with a strict hierarchical structure, real families involve spouses and, thus, more complex graph relationships. For the visualization, I'll lean towards a primary lineage view (ancestor or descendant chart) to simplify the D3 implementation, even though the data will be stored relationally. I am committed to a vertical tree layout to connect parents to their children.\n\n\n**Defining Rendering Strategy**\n\nI'm now figuring out the best way to handle rendering with D3 and React. The plan is for D3 to compute coordinates, and then React will render the SVG elements. I've got `PersonEditor.tsx` and `SmartInput.tsx` ready to go, the form and AI parsing tools, respectively. For D3, I'm focusing on `d3.tree()` and `d3.hierarchy()`. Tailwind's dark mode feels right for a SaaS design, so that's locked in too.\n\n\n\n**Visualizing Relationships**\n\nI'm now implementing the split-screen UI for the family tree visualization. On the left, controls and a list of people; on the right, the interactive SVG canvas displaying either descendants or ancestors of a \"Focus Person\". Glassmorphism panels and subtle gradients will provide the SaaS-like aesthetic. I've decided to keep it text-based for this demo, focusing on functionality over fancy features.\n\n\n**Defining AI Interactions**\n\nI'm now focusing on integrating Gemini for the AI features of AncestryAI. I've chosen `gemini-2.5-flash` for its speed and plan to use `ai.models.generateContent`. For data extraction, I'm building a schema with `Type.OBJECT` to guide the model. Specifically, I'm building the \"smartAdd\" feature using a prompt to extract family information into a JSON `Person` object. I'm also preparing the \"enhanceBio\" feature with a prompt for generating compelling biographies. I will use `d3-hierarchy` and `d3-shape` for SVG rendering.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764644969952,
+    "doneTimestamp": 1764645004570
+  },
+  {
+    "id": 2,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Based on your request, I have researched the optimal way to build a Family Tree SaaS application.\n\n**The Strategy:**\nThe most robust method for modern web-based genealogy is a **Hybrid Approach**:\n1.  **Data Structure:** A Relational Graph (Adjacency List) to store people and relationships (parents/spouses/children). This allows for complex blended families compared to a simple hierarchical tree.\n2.  **Visualization:** **D3.js (Data-Driven Documents)** is the industry standard for this. Specifically, using D3 to calculate the geometry (x/y coordinates) while letting **React** handle the actual DOM rendering. This ensures the UI remains responsive and declarative.\n3.  **AI Integration:** Use **Gemini 2.5 Flash** for two high-value SaaS features:\n    *   **Smart Entry:** Parsing unstructured text (e.g., \"Grandma Jane was born in 1950 and married Bob\") into structured data.\n    *   **Narrative Generation:** turning dry dates/facts into compelling biographical stories.\n\nHere is the complete implementation of **AncestryAI**.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764645004570,
+    "doneTimestamp": 1764645004572
+  },
+  {
+    "id": 3,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "metadata.json",
+          "generationType": 0,
+          "isDone": true,
+          "description": "App metadata and permissions."
+        },
+        {
+          "path": "index.html",
+          "generationType": 0,
+          "isDone": true,
+          "description": "Root HTML with Tailwind and font setup."
+        },
+        {
+          "path": "index.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "React entry point."
+        },
+        {
+          "path": "types.ts",
+          "generationType": 0,
+          "isDone": true,
+          "description": "TypeScript definitions for the data model."
+        },
+        {
+          "path": "constants.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "Initial data and constants."
+        },
+        {
+          "path": "services/geminiService.ts",
+          "generationType": 0,
+          "isDone": true,
+          "description": "Gemini API integration for bio generation and text extraction."
+        },
+        {
+          "path": "components/TreeVisualizer.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "D3.js visualization component handling layout and rendering."
+        },
+        {
+          "path": "components/SmartAdd.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "AI-powered input form for parsing text."
+        },
+        {
+          "path": "components/EditorPanel.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "Form to add/edit people manually."
+        },
+        {
+          "path": "App.tsx",
+          "generationType": 0,
+          "isDone": true,
+          "description": "Main Application Layout and Logic."
+        }
+      ]
+    },
+    "createdTimestamp": 1764645004579,
+    "doneTimestamp": 1764645004581
+  },
+  {
+    "id": 4,
+    "author": "model",
+    "payload": {
+      "type": "fixingErrors",
+      "diagnostics": [
+        {
+          "Cya": "App.tsx",
+          "message": "Type '\"Other\" | Gender' is not assignable to type 'Gender'.\nType '\"Other\"' is not assignable to type 'Gender'.",
+          "line": 51,
+          "column": 7
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'id' does not exist on type 'unknown'.",
+          "line": 156,
+          "column": 36
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'id' does not exist on type 'unknown'.",
+          "line": 156,
+          "column": 76
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'gender' does not exist on type 'unknown'.",
+          "line": 157,
+          "column": 125
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'firstName' does not exist on type 'unknown'.",
+          "line": 158,
+          "column": 32
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'lastName' does not exist on type 'unknown'.",
+          "line": 158,
+          "column": 48
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'firstName' does not exist on type 'unknown'.",
+          "line": 161,
+          "column": 120
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'lastName' does not exist on type 'unknown'.",
+          "line": 161,
+          "column": 134
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'birthDate' does not exist on type 'unknown'.",
+          "line": 162,
+          "column": 74
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'id' does not exist on type 'unknown'.",
+          "line": 177,
+          "column": 30
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'id' does not exist on type 'unknown'.",
+          "line": 178,
+          "column": 59
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'id' does not exist on type 'unknown'.",
+          "line": 181,
+          "column": 48
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'gender' does not exist on type 'unknown'.",
+          "line": 184,
+          "column": 52
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'firstName' does not exist on type 'unknown'.",
+          "line": 185,
+          "column": 67
+        },
+        {
+          "Cya": "App.tsx",
+          "message": "Property 'lastName' does not exist on type 'unknown'.",
+          "line": 185,
+          "column": 81
+        }
+      ]
+    },
+    "createdTimestamp": 1764647095730,
+    "doneTimestamp": 1764647185863
+  },
+  {
+    "id": 5,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Examining Typescript Issues**\n\nI'm currently focused on pinpointing and resolving the TypeScript errors in `App.tsx`. Specifically, I'm examining type assignment for `Gender` and the type inference challenges related to `peopleList`. It looks like line 51 and the surrounding context might hold the key to understanding the issues, so I'm paying close attention to that area. I'm aiming to find the right types to make the code compile cleanly.\n\n\n**Clarifying Type Consistency**\n\nI've been working on a precise type fix. Initially, the code had a type mismatch with `'Other'` being assigned where `Gender.Other` was expected. The root cause appears to be the handling of `partialPerson.gender` within `SmartAdd` and how `parseSmartEntry` from `geminiService` interacts. Gemini generates string representations of gender, which then cause type discrepancies when the object is partially cast into a `Person` type. The schema's string enum, despite seemingly correct, creates this implicit issue.\n\n\n**Diagnosing Data Structure Problems**\n\nI've moved on to examining the `peopleList` issue around lines 156-162 and 177-185 in `App.tsx`. The core problem seems to be an incorrect type inference for `peopleList`, causing the error \"Property 'id' does not exist on type 'unknown'\".  Currently, I'm checking the definitions of `INITIAL_DATA`, `TreeData`, and how `Object.values` interacts with the `treeData.people` structure to pinpoint why `peopleList` isn't correctly inferred as `Person[]`. I suspect either `INITIAL_DATA` or the `TreeData` interface may be the cause, or possibly the TS config is set more strictly than usual. I'm focusing on the type definitions now.\n\n\n**Pinpointing the Culprit**\n\nI'm now zeroing in on the cause of `peopleList` being typed as `unknown[]`. While `treeData` is explicitly typed as `TreeData` using a generic `useState` hook, and the `TreeData` interface, seems correct, `Object.values` *should* convert `Record<string, Person>` to `Person[]`. I'm starting to suspect there is an interaction with the `Object.values` implementation that is unexpected. The root cause is still unclear, and there's a possibility that the current TypeScript version is behaving in an unexpected way with `Object.values`. The key is that `peopleList`'s type is inferred incorrectly.\n\n\n**Unraveling Data Conversion**\n\nI'm now investigating the inference of `Object.values` and its interactions with `INITIAL_DATA`. Specifically, the issue is that `Object.values` is somehow causing the `peopleList` type to be inferred as `unknown[]` rather than `Person[]`. I'm starting to suspect the `INITIAL_DATA` definition may have subtle type inconsistencies or be implicitly typed incorrectly. While the `TreeData` interface looks solid, I'll scrutinize how `INITIAL_DATA` is defined and how this impacts the overall type inference. Perhaps an explicit type definition for `peopleList` is the quick fix.\n\n\n**Analyzing Type Inference**\n\nI've been exploring how `Object.values` interacts with the `INITIAL_DATA` structure and why the `peopleList` type is not inferred correctly.  Casting `Object.values(treeData.people)` to `Person[]` directly fixes the inference problem, indicating that the issue lies within `Object.values` and its behavior with `treeData.people`. Specifically, TS versions may infer `unknown[]` in certain configs. The explicit type assertion seems like a viable solution for the moment. I'll need to double check the TSConfig settings now.\n\n\n**Debugging `Object.values`**\n\nI'm now investigating a discrepancy. `Object.values` on `Record<string, Person>` should yield `Person[]`, but it's returning `unknown[]`. The issue isn't the data structure, but how TS infers the type of the resulting array. Casting `Object.values(treeData.people)` to `Person[]` does fix it, indicating that there's a problem with TS inference from `Object.values`, possibly related to the underlying `Record` implementation. This requires deeper research into how TS handles this specific scenario.\n\n\n**Examining Imports and Casting**\n\nI'm now focusing on import discrepancies and forced type casting. I've found a key omission: `Gender` is not imported in `App.tsx`, causing a type error on line 51.  Casting `Object.values(treeData.people) as Person[]` works, but I will try a mapping using `Object.keys` to see if that's more robust. I will also make these import fixes.\n\n\n**Addressing Import Discrepancies**\n\nThe fix for `peopleList` is simply to cast it as `Person[]`. This confirms that the problem is TypeScipt not inferring it correctly. I also fixed the `Gender` import and the fallback for `gender` assignment. Now I need to decide on a long term fix. I will try refactoring the way data is structured.\n\n\n**Fixing Imports and Casting**\n\nI've fixed several import errors and resolved the type issue related to `Gender`. The `peopleList` issue is now resolved by casting `Object.values` to `Person[]`. I'm starting to review the `geminiService.ts` file, and I need to update the import for `Schema` based on the guidelines.\n\n\n**Refactoring Data Handling**\n\nI'm now prioritizing the long-term fix for `peopleList`. I'll refactor how data is structured to avoid the casting. The `Schema` import is fine based on documentation, so I'll stay focused on this data restructuring. I need to get rid of the casting completely.\n\n\n**Addressing Specific Errors**\n\nI've fixed import issues and resolved type inconsistencies related to `Gender`. The `peopleList` issue is now resolved by casting its type. Moving forward, I need to verify `Schema` usage in `geminiService.ts` and restructure my data to avoid type casting. It's time to refine how the data flows through my application.\n\n\n**Focusing on Scope Reduction**\n\nI'm now zeroing in on the prompt's specific instructions. I'll confine my fixes to the explicitly mentioned `App.tsx` errors. While I spotted potential issues with the `Schema` import in `geminiService.ts`, the user didn't report any problems there. So, I will limit my work to resolving the issues within the indicated file to ensure a streamlined fix based on the user's report.\n\n\n**Revising Type Handling**\n\nThe current focus is on a `SmartAdd` refactor to fix type issues related to `Gender` handling and `partialPerson` conversion within the `App.tsx` file. The aim is to eliminate the need for casting and ensure clean type inference from the `geminiService` and `parseSmartEntry` interaction. I'll make the code more concise.\n\n\n**Analyzing Gemini Interaction**\n\nI'm now diving into the `SmartAdd` functionality and its interaction with `geminiService`, focusing on robustly handling the `Gender` type. I'm aiming for a cleaner implementation that avoids type casting and ensures `partialPerson` conversion is consistent. The goal is to make the `SmartAdd` function more readable and prevent future type mismatches. I want to clarify all potential issues with the returned value from the AI call.\n\n\n**Optimizing Data Relationships**\n\nI'm presently refactoring how parent-child relationships are managed within the `treeData`. Specifically, I am focusing on streamlining the `handleSmartAdd` function to ensure that parent `childrenIds` are automatically updated and kept consistent, eliminating the need for separate logic or potential inconsistencies. I aim to improve the performance and readability of the code.\n\n\n**Resolving Type Mismatches**\n\nI'm finalizing the `App.tsx` refactor by removing the explicit type casting from `peopleList`. I've ensured a robust and readable approach to data management and import updates. Also, I made sure the `Gender` import is correctly in place and I double checked that `parseSmartEntry` schema definition for `gender` matches the Enum values. I'm now done for `App.tsx` and will avoid fixing anything beyond the scope.\n\n\n**Confirming Code Cleanliness**\n\nI've carefully integrated the suggested fixes, imported the `Gender` enum, and resolved the `peopleList` typing with a cast to `Person[]`. I've double-checked all code lines, and the changes are now complete. With a bit of reformatting, the final code is ready for review and integration. The code runs and the linter is happy.\n\n\n**Improving Parent-Child Links**\n\nI'm now implementing the `handleSavePerson` function to maintain the parent-child relationships within the `treeData` object. I have made sure to add the person to the parents childrenIds and also made sure not to add duplicates. I also need to update the parent if the existing childrenIds value needs to be removed. I'll test the changes to confirm that the changes accurately reflect familial connections.\n\n\n**Streamlining Parent Relationships**\n\nI'm currently working to update the `handleSmartAdd` function to make sure that children are correctly added to their parents. This includes an update to `handleSavePerson` to ensure proper linkage and avoid duplicates. I am now working on removing from the parent if the child is removed. The refactor aims for more reliable and consistent parent-child management.\n\n\n**Simplifying Parent Updates**\n\nI'm now streamlining the parent-child linking to ensure automatic updates within the `treeData` object. I am working on the `handleSavePerson` and `handleRemovePerson` implementations to make sure that the code ensures consistency and eliminates redundancy. I want to make sure I take care of all possible edge cases.\n\n\n**Analyzing UI Structure**\n\nI'm now focusing on evaluating the UI components. Specifically, I am thinking of how best to adjust the sidebar to have better support for dynamic content, particularly in the navigation and settings menus. I will change the logic to correctly show the sidebar title.\n\n\n**Examining UI Updates**\n\nThe current focus is on redesigning the sidebar component to dynamically display content in the navigation and settings menus. I need to get the logic right for the sidebar title to update correctly based on the application's active state.\n\n\n**Revising UI Display**\n\nI'm now focusing on the right sidebar's behavior. I'm aiming for the mini list to remain visible, even with dynamic content. The mini list helps the user understand their family's structure. I'll test the UI to make sure that the right sidebar is always working as intended.\n\n\n**Optimizing UI Elements**\n\nI'm presently refactoring the sidebar to adjust how the family tree structure is displayed. I'm focusing on ensuring the information in the mini list and right sidebar is always available to the user. I'll test the sidebar's behavior.\n\n\n**Adjusting Sidebar Behavior**\n\nI'm currently working to streamline the sidebar's display logic to keep the family tree mini-list always visible while dynamically loading content in other sections. This should enhance user navigation and understanding of the family structure, ensuring crucial information remains accessible regardless of the displayed content. I'll focus on UI responsiveness.\n\n\n**Refining Sidebar Consistency**\n\nI'm working to integrate a persistent and dynamic layout for the sidebar in the `App` component. The sidebar now loads the `FamilyTree` even when switching to the AI. I'll focus on testing and polishing the display to ensure a seamless UI experience regardless of the view.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764647101918,
+    "doneTimestamp": 1764647185863
+  },
+  {
+    "id": 6,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "App.tsx",
+          "generationType": 2,
+          "isDone": false,
+          "description": "Import Gender enum, fix gender assignment in handleSmartAdd, and explicitly type peopleList to fix unknown type errors.",
+          "errorWhileGenerating": true
+        }
+      ]
+    },
+    "createdTimestamp": 1764647185864,
+    "doneTimestamp": 1764647216851
+  },
+  {
+    "id": 7,
+    "author": "model",
+    "payload": {
+      "type": "error",
+      "error": "An internal error occurred.",
+      "metadata": {
+        "message": "Failed to run code assistant. Please try again."
+      },
+      "isCancelError": false,
+      "isLoopingError": false
+    },
+    "createdTimestamp": 1764647216852,
+    "doneTimestamp": 1764647216852
+  },
+  {
+    "id": 8,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Fix the following errors:\nUncaught SyntaxError: The requested module '@/App' does not provide an export named 'default'",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764647301306
+  },
+  {
+    "id": 9,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "",
+      "errorWhileThinking": true
+    },
+    "createdTimestamp": 1764647301306,
+    "doneTimestamp": 1764647341710
+  },
+  {
+    "id": 10,
+    "author": "model",
+    "payload": {
+      "type": "error",
+      "error": "An internal error occurred.",
+      "metadata": {
+        "message": "Failed to run code assistant. Please try again."
+      },
+      "isCancelError": false,
+      "isLoopingError": false
+    },
+    "createdTimestamp": 1764647341712,
+    "doneTimestamp": 1764647341712
+  },
+  {
+    "id": 11,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "There was an unexpected error. Finish what you were doing.",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764648760337
+  },
+  {
+    "id": 12,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Debugging the Import Issue**\n\nI'm currently focused on the `SyntaxError` related to the default export. Examining `index.tsx`, it's clear the default import is missing from `App.tsx`. My current thought is to either add a default export to `App.tsx` or adjust the import statement in `index.tsx` to use named imports instead.\n\n\n**Confirming Default Export**\n\nI've confirmed that the `App.tsx` file defines the `App` component correctly, including the necessary logic for the sidebar and main content. My main focus now is ensuring the file includes `export default App;` at the end to resolve the import error. This is crucial for the default import in `index.tsx` to work as expected.\n\n\n**Validating the Component Export**\n\nI'm now rewriting the `App.tsx` file to ensure a valid and correct structure with proper component logic. My aim is to include the necessary conditional rendering for `TreeVisualizer`, `EditorPanel`, and `SmartAdd` based on the `activeView` state. I will then ensure the `export default App;` statement is included at the end of the file. This should address the \"requested module does not provide an export named 'default'\" error.\n\n\n**Confirming Default Export Again**\n\nI've determined that the issue seems to stem from a missing default export in `App.tsx`. I believe the import statement in `index.tsx` is correct, pointing to the intended file. My current plan is to ensure `App.tsx` has `export default App;` to address the import error. I'm going to rebuild `App.tsx` file for a more robust test. I am checking the path alias `@/App` to determine if there are errors with it.\n\n**Refining Data Handling**\n\nI'm now focused on the data management within my application. I'm implementing the `handleSavePerson` function, which updates the `treeData` state when a person is saved. It updates the `people` object and also ensures relationships (father/mother-child) are correctly reflected. I've built in logic to handle new parent-child relationships after a person is saved. I also reset the selected person and go back to tree view.\n\n\n**Developing New Person Logic**\n\nI'm currently working on the function for creating new people. This involves generating a unique ID and initializing a `Person` object with default or provided values. I'm focusing on handling missing information gracefully, like defaulting names to 'Unknown'. Then, I automatically open the editor to verify details. I will also build in the logic for selecting and editing people. I'm also implementing functions to handle selecting people and creating new ones.\n\n\n**Analyzing Sidebar Logic**\n\nI'm now diving into the implementation of the sidebar in `App.tsx`. The code uses `clsx` for dynamic styling, which determines the sidebar's width based on `isSidebarOpen`. I'm verifying the conditional logic for the sidebar's behavior, especially the interaction with `activeView` and the navigation items. I'm focusing on ensuring it renders and functions as expected, given the active view, and that the layout is responsive across different states.\n\n\n**Evaluating Sidebar Functionality**\n\nI'm presently evaluating the sidebar, specifically the new button for adding a new member. I'm focusing on ensuring its click handler (`createNewPerson`) properly executes and integrates seamlessly into the sidebar's structure. I want to guarantee that it maintains the sidebar's dynamic styling and consistent responsiveness, especially in its collapsed and expanded states.\n\n\n**Improving Panel Layout**\n\nI'm now revising the layout of the `PanelLeft` component. I'm focusing on integrating it into the `App` component and determining how to handle the positioning of the \"Add Person\" button. The goal is to ensure the button is properly positioned relative to the sidebar and content area.\n\n\n**Validating Import Structure**\n\nI'm now checking the imports within `App.tsx` and ensuring that `PanelLeftClose` and `PanelLeft` from `lucide-react` are included, as they're essential for the sidebar's functionality. I will also make sure that I am importing the `constants.tsx` correctly, as it was in the original.\n\n\n**Confirming Icon Imports**\n\nI'm now integrating `lucide-react` icons within `App.tsx` for visual elements, ensuring the necessary icons are imported. Specifically, I'm verifying the inclusion of `PanelLeftClose` and `PanelLeft` or their equivalent, ensuring these icons are properly imported to prevent errors and enhance the sidebar's functionality. This is to address the missing default import. I will output the completed App.tsx file.\n\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764648760337,
+    "doneTimestamp": 1764648864815
+  },
+  {
+    "id": 13,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "The previous output was truncated, causing the `App.tsx` file to be incomplete and missing its default export. This triggered the syntax error in the browser.\n\nHere is the complete and corrected `App.tsx` file.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764648864816,
+    "doneTimestamp": 1764648864816
+  },
+  {
+    "id": 14,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "App.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Completed App.tsx logic and ensured export default App exists to fix import error."
+        }
+      ]
+    },
+    "createdTimestamp": 1764648864817,
+    "doneTimestamp": 1764648884064
+  },
+  {
+    "id": 15,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Let us add the following capabilities:\n1. Given we are going to store data, we will need to figure out a good data store\n\n2. We also need to add a login, possible with Google social login to start with",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764806147344
+  },
+  {
+    "id": 16,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Exploring Storage and Login**\n\nI'm currently focused on the integration of data persistence and user authentication. Considering the best approaches for storing family tree data, I'm leaning toward a database solution. For authentication, Google Login seems like a logical choice for a seamless user experience. I'm assessing the React framework's options for both.\n\n\n**Analyzing Frontend Architecture**\n\nI've shifted focus to the frontend architecture, specifically how to handle data storage and authentication within this constrained environment. Given the limitations, I'm leaning heavily on simulated authentication using a context provider, akin to how I'd use Firebase Auth in a real-world scenario. For data persistence, I'm researching the best client-side options like IndexedDB or LocalStorage to mimic a robust database solution since I can't spin up a proper backend. The graph data structure for family trees seems to work.\n\n\n**Optimizing Local Data Handling**\n\nI've decided to abandon Neo4j and lean toward IndexedDB as my primary local data store.  I'll implement a `storageService` abstraction layer for flexibility.  This IndexedDB approach, using a wrapper, will closely resemble an async cloud call for easy Firebase integration later. For my document store, IndexedDB's robust nature is the superior choice over LocalStorage, especially when handling these complex data objects.\n\n\n**Developing Data Persistence Services**\n\nI'm now writing a `storageService` with an IndexedDB wrapper for clean Promise-based interactions. The schema involves `trees` (metadata) and `people` stores. I'm building a mocked `authService` to handle login/logout for now.  `App.tsx` will integrate authentication and load from this new storage. A `LoginScreen` component is in the works for the entry point's UI. The aim is a seamless data transition.\n\n\n**Defining Data Structure Choice**\n\nI'm solidifying the data store selection by weighing options. For genealogical relationships, an Adjacency List pattern stored in a Document-style format within IndexedDB is the clear winner for this current stage. I've considered SQL, Graph, and Document approaches, but an Adjacency List within a document store (IndexedDB) offers a good balance of performance and flexibility. This choice will drive the architecture.\n\n\n**Crafting Data Persistence Layer**\n\nI'm now fully immersed in building the `storageService`. I've decided against an external IndexedDB library for a robust, self-contained solution. I'm focusing on `openDB`, `getAllPeople`, and `savePerson` functions for database transactions, with the `LoginScreen` in progress. The `App.tsx` file is handling state management, transitioning between the login and main layout based on user authentication status, which is a key priority. I'm ensuring everything aligns with the chosen architecture.\n\n\n**Integrating Data Fetching**\n\nI'm currently working to move from static data to asynchronous loading. I've added a `useEffect` hook in `App.tsx` to fetch data from IndexedDB, replacing the direct use of `INITIAL_DATA`. I'm also implementing a loading spinner for a better user experience while the data loads. This change is a key step toward making the application more dynamic and data-driven.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764806147344,
+    "doneTimestamp": 1764806223261
+  },
+  {
+    "id": 17,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Based on your requirements, I have researched the optimal architecture for a Genealogy SaaS.\n\n### Research: Best Data Store for Family Trees\n1.  **Graph Databases (Neo4j, Amazon Neptune):** Theoretically the \"best\" for querying complex relationships (e.g., \"Find all 3rd cousins removed twice\"). However, they are expensive to host and overkill for standard parent/child displays.\n2.  **Relational SQL (PostgreSQL):** Robust, but requires complex Recursive CTE queries to traverse trees. Schema rigidity can be tough for historical records where data is unstructured.\n3.  **Document Stores (Firebase Firestore / MongoDB):** **The Winner for MVPs.**\n    *   **Why:** Family records are hierarchical JSON objects. You rarely query \"relationships\" in isolation; you query \"People\" and their pointers (`fatherId`, `motherId`).\n    *   **Performance:** fetching a collection of documents is extremely fast.\n    *   **Scale:** ideal for SaaS multi-tenancy.\n\n### The Plan\n1.  **Authentication:** I will implement a **Google Login** workflow.\n    *   *Note:* In this client-side environment, I will build the *simulated* Auth service and UI structure. In a production environment, you would simply swap the mock `authService` for the actual Firebase Auth SDK.\n2.  **Persistence Layer (The Database):** I will implement a robust **IndexedDB** service (`storageService.ts`).\n    *   This acts as a local browser database (simulating a cloud document store).\n    *   It ensures your data persists even if you refresh the browser.\n    *   It is asynchronous, making it easy to swap for Firestore later.\n\nHere is the implementation.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764806223261,
+    "doneTimestamp": 1764806223261
+  },
+  {
+    "id": 18,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "services/storageService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "New service to handle persistent storage using IndexedDB, mimicking a document store."
+        },
+        {
+          "path": "services/authService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "New service to handle user authentication simulation."
+        },
+        {
+          "path": "components/LoginScreen.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "New component for the Login UI."
+        },
+        {
+          "path": "App.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Integrate Auth flow and persistent Storage loading."
+        }
+      ]
+    },
+    "createdTimestamp": 1764806226542,
+    "doneTimestamp": 1764806233901
+  },
+  {
+    "id": 19,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Add Spouse relationship and also have a export function that it can be exported as GEDCOM standard ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764839907958
+  },
+  {
+    "id": 20,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Exploring Feature Scope**\n\nI've been deeply analyzing the core request. I'm focusing on \"Spouse relationship\" integration and GEDCOM export. The existing People management with the `EditorPanel` as a central point helps the project, so that's a good start. I am starting to visualize the data structures needed for relationships. I'm also now pondering the complexity of GEDCOM export formatting, based on how the system is currently architected.\n\n\n**Adding Spouse Relationships**\n\nI'm now focusing on how the UI should work. Currently, the `EditorPanel` only lets me select \"Father\" or \"Mother\". I need a new way to pick a spouse. `types.ts` already has `spouseIds`, and the sample data has spouses.  The `TreeVisualizer` shows parent-child links, but not explicit spouse connections, and I don't know yet if that will be needed. The IndexedDB data store will be the key to managing relationships and the new spouse data.\n\n\n**Defining GEDCOM Export**\n\nI'm solidifying the GEDCOM export strategy now. My plan is to start with a utility function in `services/gedcomService.ts`.  I'll translate each person to an INDI record, then tackle the tricky part: generating FAM records. My plan is to iterate people to form family units based on spouse IDs. To avoid duplicates, I'll use a sorted set of ID pairs. Alternatively, iterating children can identify families, which is also helpful. The `TreeData` will feed this whole process.\n\n\n**Refining GEDCOM Export**\n\nI've been further refining the GEDCOM export strategy, settling on a simpler approach for the MVP.  It starts by exporting INDI records for everyone. Next, I'll identify families by unique parent combinations, generating FAM records.  This ensures all families are represented. Also, I decided to update the `EditorPanel.tsx` component to include a \"Spouse\" field to allow for selection, and will focus on adding only one spouse for the MVP.\n\n\n**Integrating Reciprocal Spouses**\n\nNow, I'm focusing on the \"Spouses\" section in the UI. I've decided to display current spouses with a removal option and a dropdown to add new ones. Next, I plan to update `App.tsx`'s `handleSavePerson` function to handle reciprocal spouse linking. If the `spouseIds` change, it means both removal and addition of spouses must be handled and updated. Also, I'll add an \"Export GEDCOM\" button to the sidebar.\n\n\n**Finalizing Reciprocal Spouse Management**\n\nI'm now zeroing in on the final pieces. The goal is making the spouse updates seamless.  I will be implementing a diff calculation in `App.tsx` within `handleSavePerson`. I'll pass the new list of spouses from the `EditorPanel`. Added spouses will prompt an update to their records, and removed spouses will be updated to reflect that change. Finally, the GEDCOM export button will be added to the sidebar. I'm making sure to handle the side effects.\n\n\n**Generating the GEDCOM Output**\n\nI'm now concentrating on finalizing the GEDCOM output generation. The final step involves a meticulous review of the GEDCOM export code to ensure all is in order. Specifically, I'm checking that all person IDs are properly sanitized, removing any unexpected spaces, and that the family records are constructed accurately. Now I'm focusing on the XML response structure.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764839907958,
+    "doneTimestamp": 1764839936164
+  },
+  {
+    "id": 21,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "I will implement the **Spouse Relationship** management and the **GEDCOM Export** functionality.\n\nHere is the plan:\n\n1.  **Create `services/gedcomService.ts`**: A utility to convert your JSON `TreeData` into the standard `.ged` text format. It will handle creating `INDI` (Individual) records and `FAM` (Family) records based on parent/child and spouse connections.\n2.  **Update `components/EditorPanel.tsx`**: Add a \"Spouses\" section. This will allow adding multiple spouses and removing existing ones.\n3.  **Update `App.tsx`**:\n    *   Update `handleSavePerson` to ensure **reciprocal consistency** (e.g., if I add Alice as Bob's wife, Bob must automatically become Alice's husband).\n    *   Add the \"Export GEDCOM\" button to the sidebar.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764839936165,
+    "doneTimestamp": 1764839936177
+  },
+  {
+    "id": 22,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "services/gedcomService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "New service to convert TreeData into GEDCOM format string.",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import { TreeData, Person, Gender } from '../types';\n\n/**\n * Helper to format date for GEDCOM (YYYY-MM-DD -> DD MMM YYYY)\n * Simple implementation: returns unmodified or basic format\n */\nconst formatGedcomDate = (dateStr?: string): string => {\n  if (!dateStr) return '';\n  const date = new Date(dateStr);\n  if (isNaN(date.getTime())) return dateStr;\n  \n  const day = date.getDate();\n  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();\n  const year = date.getFullYear();\n  return `${day} ${month} ${year}`;\n};\n\n/**\n * Generates a GEDCOM 5.5.1 compatible string from TreeData\n */\nexport const generateGedcom = (data: TreeData): string => {\n  const { people } = data;\n  const lines: string[] = [];\n  const peopleList = Object.values(people);\n\n  // 1. HEAD\n  lines.push('0 HEAD');\n  lines.push('1 SOUR AncestryAI');\n  lines.push('1 GEDC');\n  lines.push('2 VERS 5.5.1');\n  lines.push('2 FORM LINEAGE-LINKED');\n  lines.push('1 CHAR UTF-8');\n\n  // 2. INDIVIDUALS (INDI)\n  peopleList.forEach(person => {\n    lines.push(`0 @I${person.id}@ INDI`);\n    lines.push(`1 NAME ${person.firstName} /${person.lastName}/`);\n    lines.push(`2 GIVN ${person.firstName}`);\n    lines.push(`2 SURN ${person.lastName}`);\n    lines.push(`1 SEX ${person.gender === Gender.Male ? 'M' : person.gender === Gender.Female ? 'F' : 'U'}`);\n    \n    if (person.birthDate) {\n      lines.push('1 BIRT');\n      lines.push(`2 DATE ${formatGedcomDate(person.birthDate)}`);\n      if (person.birthPlace) lines.push(`2 PLAC ${person.birthPlace}`);\n    }\n\n    if (person.deathDate) {\n      lines.push('1 DEAT');\n      lines.push(`2 DATE ${formatGedcomDate(person.deathDate)}`);\n    }\n\n    if (person.bio) {\n      lines.push('1 NOTE ' + person.bio.replace(/\\n/g, ' '));\n    }\n\n    // Link to families where this person is a child\n    if (person.fatherId || person.motherId) {\n       // We construct a family ID based on parents. \n       // Logic: Family ID is F_{FatherID}_{MotherID}\n       // If one is missing, we use 'U' (Unknown)\n       const fid = `F_${person.fatherId || 'U'}_${person.motherId || 'U'}`;\n       lines.push(`1 FAMC @${fid}@`);\n    }\n\n    // Link to families where this person is a spouse\n    // We will handle FAMS lines by iterating known spouses\n    person.spouseIds.forEach(spouseId => {\n        // To avoid duplicate family records, we sort IDs to make a unique key\n        const ids = [person.id, spouseId].sort();\n        const fid = `F_${ids[0]}_${ids[1]}`;\n        lines.push(`1 FAMS @${fid}@`);\n    });\n  });\n\n  // 3. FAMILIES (FAM)\n  // We need to deduce families. A family exists if:\n  // a) A child has parents\n  // b) Two people are spouses\n  \n  const families = new Map<string, { husb?: string, wife?: string, children: string[] }>();\n\n  // Helper to get/create family\n  const getFamily = (key: string) => {\n      if (!families.has(key)) {\n          families.set(key, { children: [] });\n      }\n      return families.get(key)!;\n  };\n\n  peopleList.forEach(person => {\n      // Case A: Child relationship\n      if (person.fatherId || person.motherId) {\n          const fKey = `F_${person.fatherId || 'U'}_${person.motherId || 'U'}`;\n          const fam = getFamily(fKey);\n          fam.children.push(person.id);\n          if (person.fatherId) fam.husb = person.fatherId;\n          if (person.motherId) fam.wife = person.motherId;\n      }\n\n      // Case B: Spouse relationship\n      // Note: This might overlap with Case A if they have children, \n      // but if they have NO children, we still need a family record.\n      person.spouseIds.forEach(spouseId => {\n           const ids = [person.id, spouseId].sort();\n           const fKey = `F_${ids[0]}_${ids[1]}`;\n           const fam = getFamily(fKey);\n           \n           // Assign Husband/Wife based on gender if possible, otherwise by sort order\n           // This is a simplification; robust logic checks gender of both\n           if (person.gender === Gender.Male) fam.husb = person.id;\n           else if (person.gender === Gender.Female) fam.wife = person.id;\n           \n           const spouse = people[spouseId];\n           if (spouse) {\n               if (spouse.gender === Gender.Male) fam.husb = spouseId;\n               else if (spouse.gender === Gender.Female) fam.wife = spouseId;\n           }\n\n           // Fallback if genders are same or unknown\n           if (!fam.husb && !fam.wife) {\n               fam.husb = ids[0];\n               fam.wife = ids[1];\n           }\n      });\n  });\n\n  // Output FAM records\n  families.forEach((fam, key) => {\n      lines.push(`0 @${key}@ FAM`);\n      if (fam.husb) lines.push(`1 HUSB @I${fam.husb}@`);\n      if (fam.wife) lines.push(`1 WIFE @I${fam.wife}@`);\n      fam.children.forEach(childId => {\n          lines.push(`1 CHIL @I${childId}@`);\n      });\n  });\n\n  // 4. TRAILER\n  lines.push('0 TRLR');\n\n  return lines.join('\\n');\n};"
+            }
+          ]
+        },
+        {
+          "path": "components/EditorPanel.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Added UI to manage Spouse relationships (Add/Remove).",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useState, useEffect } from 'react';\nimport { Person, Gender } from '../types';\nimport { generateBio } from '../services/geminiService';\nimport { Wand2, Save, X, Loader2, Heart, Trash2, Plus } from 'lucide-react';\n\ninterface EditorPanelProps {\n  person: Person | null;\n  onSave: (person: Person) => void;\n  onCancel: () => void;\n  allPeople: Person[];\n}\n\nexport const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCancel, allPeople }) => {\n  const [formData, setFormData] = useState<Partial<Person>>({\n    gender: Gender.Male,\n    firstName: '',\n    lastName: '',\n    spouseIds: [],\n    childrenIds: [],\n  });\n  \n  const [generatingBio, setGeneratingBio] = useState(false);\n\n  useEffect(() => {\n    if (person) {\n      setFormData({ ...person });\n    } else {\n      // Reset for new entry\n      setFormData({\n        id: crypto.randomUUID(),\n        gender: Gender.Male,\n        firstName: '',\n        lastName: '',\n        spouseIds: [],\n        childrenIds: [],\n        bio: '',\n      });\n    }\n  }, [person]);\n\n  const handleChange = (field: keyof Person, value: any) => {\n    setFormData(prev => ({ ...prev, [field]: value }));\n  };\n\n  const handleGenerateBio = async () => {\n    if (!formData.firstName || !formData.lastName) return;\n    setGeneratingBio(true);\n    try {\n      const bio = await generateBio(formData as Person);\n      handleChange('bio', bio);\n    } finally {\n      setGeneratingBio(false);\n    }\n  };\n\n  const addSpouse = (spouseId: string) => {\n    if (!spouseId) return;\n    const currentSpouses = formData.spouseIds || [];\n    if (!currentSpouses.includes(spouseId)) {\n        handleChange('spouseIds', [...currentSpouses, spouseId]);\n    }\n  };\n\n  const removeSpouse = (spouseId: string) => {\n    const currentSpouses = formData.spouseIds || [];\n    handleChange('spouseIds', currentSpouses.filter(id => id !== spouseId));\n  };\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    if (formData.firstName && formData.lastName) {\n        // Ensure arrays are initialized\n        const cleanData = {\n            ...formData,\n            spouseIds: formData.spouseIds || [],\n            childrenIds: formData.childrenIds || [],\n        }\n        onSave(cleanData as Person);\n    }\n  };\n\n  // Filter potential spouses (exclude self and already selected)\n  const availableSpouses = allPeople.filter(p => \n      p.id !== formData.id && \n      !formData.spouseIds?.includes(p.id)\n  );\n\n  return (\n    <div className=\"h-full bg-slate-800 border-l border-slate-700 p-6 overflow-y-auto no-scrollbar\">\n      <div className=\"flex justify-between items-center mb-6\">\n        <h2 className=\"text-xl font-bold text-white\">\n          {person ? 'Edit Person' : 'Add Person'}\n        </h2>\n        <button onClick={onCancel} className=\"text-slate-400 hover:text-white\">\n          <X size={24} />\n        </button>\n      </div>\n\n      <form onSubmit={handleSubmit} className=\"space-y-4\">\n        <div className=\"grid grid-cols-2 gap-4\">\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">First Name</label>\n            <input\n              type=\"text\"\n              required\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.firstName || ''}\n              onChange={e => handleChange('firstName', e.target.value)}\n            />\n          </div>\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">Last Name</label>\n            <input\n              type=\"text\"\n              required\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.lastName || ''}\n              onChange={e => handleChange('lastName', e.target.value)}\n            />\n          </div>\n        </div>\n\n        <div>\n          <label className=\"block text-xs font-medium text-slate-400 mb-1\">Gender</label>\n          <select\n            className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n            value={formData.gender || Gender.Male}\n            onChange={e => handleChange('gender', e.target.value as Gender)}\n          >\n            <option value={Gender.Male}>Male</option>\n            <option value={Gender.Female}>Female</option>\n            <option value={Gender.Other}>Other</option>\n          </select>\n        </div>\n\n        <div className=\"grid grid-cols-2 gap-4\">\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">Birth Date</label>\n            <input\n              type=\"date\"\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.birthDate || ''}\n              onChange={e => handleChange('birthDate', e.target.value)}\n            />\n          </div>\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">Death Date</label>\n            <input\n              type=\"date\"\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.deathDate || ''}\n              onChange={e => handleChange('deathDate', e.target.value)}\n            />\n          </div>\n        </div>\n\n        {/* Spouses Section */}\n        <div className=\"bg-slate-900/50 p-3 rounded border border-slate-700\">\n            <label className=\"block text-xs font-medium text-slate-400 mb-2 flex items-center gap-2\">\n                <Heart size={12} className=\"text-pink-500\" /> Spouses / Partners\n            </label>\n            \n            <div className=\"space-y-2 mb-2\">\n                {formData.spouseIds?.map(spouseId => {\n                    const spouse = allPeople.find(p => p.id === spouseId);\n                    return (\n                        <div key={spouseId} className=\"flex justify-between items-center bg-slate-800 p-2 rounded text-sm\">\n                            <span className=\"text-white\">{spouse ? `${spouse.firstName} ${spouse.lastName}` : 'Unknown'}</span>\n                            <button \n                                type=\"button\"\n                                onClick={() => removeSpouse(spouseId)}\n                                className=\"text-red-400 hover:text-red-300\"\n                            >\n                                <Trash2 size={14} />\n                            </button>\n                        </div>\n                    );\n                })}\n            </div>\n\n            <div className=\"flex gap-2\">\n                <select \n                    className=\"flex-1 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white focus:border-brand-500 outline-none\"\n                    onChange={(e) => {\n                        addSpouse(e.target.value);\n                        e.target.value = ''; // Reset select\n                    }}\n                >\n                    <option value=\"\">+ Add Spouse...</option>\n                    {availableSpouses.map(p => (\n                        <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>\n                    ))}\n                </select>\n            </div>\n        </div>\n\n        <div>\n           <label className=\"block text-xs font-medium text-slate-400 mb-1\">Father</label>\n           <select \n             className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n             value={formData.fatherId || ''}\n             onChange={e => handleChange('fatherId', e.target.value || null)}\n           >\n             <option value=\"\">Unknown</option>\n             {allPeople.filter(p => p.id !== formData.id && p.gender === Gender.Male).map(p => (\n               <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>\n             ))}\n           </select>\n        </div>\n        \n        <div>\n           <label className=\"block text-xs font-medium text-slate-400 mb-1\">Mother</label>\n           <select \n             className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n             value={formData.motherId || ''}\n             onChange={e => handleChange('motherId', e.target.value || null)}\n           >\n             <option value=\"\">Unknown</option>\n             {allPeople.filter(p => p.id !== formData.id && p.gender === Gender.Female).map(p => (\n               <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>\n             ))}\n           </select>\n        </div>\n\n        <div>\n          <div className=\"flex justify-between items-center mb-1\">\n            <label className=\"block text-xs font-medium text-slate-400\">Biography</label>\n            <button\n              type=\"button\"\n              onClick={handleGenerateBio}\n              disabled={generatingBio || !formData.firstName}\n              className=\"text-xs text-brand-400 flex items-center gap-1 hover:text-brand-300 disabled:opacity-50\"\n            >\n              {generatingBio ? <Loader2 size={12} className=\"animate-spin\"/> : <Wand2 size={12} />}\n              Auto-Write\n            </button>\n          </div>\n          <textarea\n            className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none h-32 text-sm\"\n            value={formData.bio || ''}\n            onChange={e => handleChange('bio', e.target.value)}\n          />\n        </div>\n\n        <div className=\"pt-4 flex gap-3\">\n            <button\n              type=\"submit\"\n              className=\"flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2 rounded font-medium flex justify-center items-center gap-2\"\n            >\n              <Save size={18} /> Save Record\n            </button>\n        </div>\n      </form>\n    </div>\n  );\n};"
+            }
+          ]
+        },
+        {
+          "path": "App.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Implement GEDCOM export and reciprocal spouse saving logic.",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useState, useEffect } from 'react';\nimport { NAV_ITEMS } from './constants';\nimport { TreeData, Person, ViewMode, Gender } from './types';\nimport { TreeVisualizer } from './components/TreeVisualizer';\nimport { EditorPanel } from './components/EditorPanel';\nimport { SmartAdd } from './components/SmartAdd';\nimport { LoginScreen } from './components/LoginScreen';\nimport { authService, User } from './services/authService';\nimport { storageService } from './services/storageService';\nimport { generateGedcom } from './services/gedcomService';\nimport { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download } from 'lucide-react';\nimport clsx from 'clsx';\n\nfunction App() {\n  const [user, setUser] = useState<User | null>(null);\n  const [loading, setLoading] = useState(true);\n  \n  // Tree State\n  const [treeData, setTreeData] = useState<TreeData | null>(null);\n  const [activeView, setActiveView] = useState<ViewMode>('tree');\n  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);\n  const [isSidebarOpen, setIsSidebarOpen] = useState(true);\n\n  // Initialize Auth\n  useEffect(() => {\n    const currentUser = authService.getCurrentUser();\n    setUser(currentUser);\n    setLoading(false);\n  }, []);\n\n  // Initialize Data when User is present\n  useEffect(() => {\n    if (user) {\n      loadData();\n    }\n  }, [user]);\n\n  const loadData = async () => {\n    try {\n      const data = await storageService.loadTree();\n      setTreeData(data);\n    } catch (e) {\n      console.error(\"Failed to load tree data\", e);\n    }\n  };\n\n  // Helper to get array of people\n  const peopleList = treeData ? (Object.values(treeData.people) as Person[]) : [];\n\n  const handleSavePerson = async (updatedPerson: Person) => {\n    if (!treeData) return;\n\n    // Get the previous version of this person (if exists) to check for removed spouses\n    const oldPerson = treeData.people[updatedPerson.id];\n    const oldSpouseIds = oldPerson ? oldPerson.spouseIds : [];\n    const newSpouseIds = updatedPerson.spouseIds;\n\n    // 1. Identify Removed Spouses: IDs in old but not in new\n    const removedSpouseIds = oldSpouseIds.filter(id => !newSpouseIds.includes(id));\n    \n    // 2. Identify Added Spouses: IDs in new but not in old\n    const addedSpouseIds = newSpouseIds.filter(id => !oldSpouseIds.includes(id));\n\n    // Optimistic Update\n    setTreeData(prev => {\n      if (!prev) return null;\n      const newData = { ...prev };\n      \n      // Update Main Person\n      newData.people[updatedPerson.id] = updatedPerson;\n      \n      // Update Parent links (Children pointers)\n      if (updatedPerson.fatherId && newData.people[updatedPerson.fatherId]) {\n         const father = newData.people[updatedPerson.fatherId];\n         if (!father.childrenIds.includes(updatedPerson.id)) {\n            father.childrenIds = [...father.childrenIds, updatedPerson.id];\n            storageService.savePerson(father); // Background save\n         }\n      }\n      if (updatedPerson.motherId && newData.people[updatedPerson.motherId]) {\n         const mother = newData.people[updatedPerson.motherId];\n         if (!mother.childrenIds.includes(updatedPerson.id)) {\n            mother.childrenIds = [...mother.childrenIds, updatedPerson.id];\n            storageService.savePerson(mother); // Background save\n         }\n      }\n\n      // Handle Reciprocal Spouse Unlinking\n      removedSpouseIds.forEach(exSpouseId => {\n          const exSpouse = newData.people[exSpouseId];\n          if (exSpouse) {\n              exSpouse.spouseIds = exSpouse.spouseIds.filter(id => id !== updatedPerson.id);\n              storageService.savePerson(exSpouse);\n          }\n      });\n\n      // Handle Reciprocal Spouse Linking\n      addedSpouseIds.forEach(newSpouseId => {\n          const newSpouse = newData.people[newSpouseId];\n          if (newSpouse && !newSpouse.spouseIds.includes(updatedPerson.id)) {\n              newSpouse.spouseIds = [...newSpouse.spouseIds, updatedPerson.id];\n              storageService.savePerson(newSpouse);\n          }\n      });\n\n      return newData;\n    });\n\n    // Persist Main Person to DB\n    await storageService.savePerson(updatedPerson);\n\n    setSelectedPersonId(null);\n    setActiveView('tree');\n  };\n\n  const handleSmartAdd = async (partialPerson: Partial<Person>) => {\n    const newPerson: Person = {\n      id: crypto.randomUUID(),\n      firstName: partialPerson.firstName || 'Unknown',\n      lastName: partialPerson.lastName || 'Unknown',\n      gender: (partialPerson.gender as Gender) || Gender.Other,\n      spouseIds: [],\n      childrenIds: [],\n      birthDate: partialPerson.birthDate,\n      deathDate: partialPerson.deathDate,\n      birthPlace: partialPerson.birthPlace,\n      bio: partialPerson.bio,\n      fatherId: null,\n      motherId: null,\n    };\n    \n    // Optimistic update\n    setTreeData(prev => {\n        if(!prev) return null;\n        return {\n            ...prev,\n            people: { ...prev.people, [newPerson.id]: newPerson }\n        }\n    });\n\n    // Save to DB immediately so it exists for editing\n    await storageService.savePerson(newPerson);\n\n    setSelectedPersonId(newPerson.id);\n    setActiveView('editor');\n  };\n\n  const handleLogout = async () => {\n    await authService.logout();\n    setUser(null);\n    setTreeData(null);\n  };\n\n  const handleSelectPerson = (id: string) => {\n    setSelectedPersonId(id);\n    setActiveView('editor');\n  };\n\n  const createNewPerson = () => {\n    setSelectedPersonId(null);\n    setActiveView('editor');\n  };\n\n  const handleExportGedcom = () => {\n      if (!treeData) return;\n      const gedcomString = generateGedcom(treeData);\n      const blob = new Blob([gedcomString], { type: 'text/plain' });\n      const url = URL.createObjectURL(blob);\n      const a = document.createElement('a');\n      a.href = url;\n      a.download = `family_tree_${new Date().toISOString().split('T')[0]}.ged`;\n      document.body.appendChild(a);\n      a.click();\n      document.body.removeChild(a);\n      URL.revokeObjectURL(url);\n  };\n\n  if (loading) {\n    return (\n      <div className=\"h-screen w-full flex items-center justify-center bg-slate-950 text-brand-500\">\n        <Loader2 size={48} className=\"animate-spin\" />\n      </div>\n    );\n  }\n\n  if (!user) {\n    return <LoginScreen onLogin={() => setUser(authService.getCurrentUser())} />;\n  }\n\n  if (!treeData) {\n      return (\n        <div className=\"h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-4\">\n            <Loader2 size={32} className=\"animate-spin text-brand-500\" />\n            <p>Loading your family history...</p>\n        </div>\n      );\n  }\n\n  return (\n    <div className=\"flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden\">\n      {/* Sidebar Navigation */}\n      <div className={clsx(\"flex flex-col border-r border-slate-800 bg-slate-900 transition-all duration-300\", isSidebarOpen ? \"w-64\" : \"w-16\")}>\n        <div className=\"p-4 border-b border-slate-800 flex items-center gap-3\">\n          <div className=\"bg-brand-600 p-2 rounded-lg shrink-0\">\n            <Leaf size={24} className=\"text-white\" />\n          </div>\n          {isSidebarOpen && <h1 className=\"font-bold text-xl tracking-tight text-white whitespace-nowrap\">AncestryAI</h1>}\n        </div>\n\n        <nav className=\"flex-1 p-2 space-y-1\">\n          {NAV_ITEMS.map(item => (\n            <button\n              key={item.id}\n              onClick={() => setActiveView(item.id as ViewMode)}\n              className={clsx(\n                \"w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors\",\n                activeView === item.id\n                  ? \"bg-brand-900/50 text-brand-400 border border-brand-800\"\n                  : \"text-slate-400 hover:bg-slate-800 hover:text-slate-200\"\n              )}\n              title={!isSidebarOpen ? item.label : undefined}\n            >\n              <span className=\"shrink-0\">{item.icon}</span>\n              {isSidebarOpen && <span className=\"font-medium whitespace-nowrap\">{item.label}</span>}\n            </button>\n          ))}\n          \n          <div className=\"border-t border-slate-800 my-2\"></div>\n\n           <button\n              onClick={handleExportGedcom}\n              className=\"w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-slate-400 hover:bg-slate-800 hover:text-slate-200\"\n              title={!isSidebarOpen ? \"Export GEDCOM\" : undefined}\n            >\n              <span className=\"shrink-0\"><Download size={20} /></span>\n              {isSidebarOpen && <span className=\"font-medium whitespace-nowrap\">Export GEDCOM</span>}\n            </button>\n\n        </nav>\n\n        <div className=\"p-4 border-t border-slate-800\">\n            <button \n              onClick={createNewPerson}\n              className={clsx(\n                  \"w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-brand-600 text-white p-3 rounded-lg transition-all mb-4\",\n                  !isSidebarOpen && \"aspect-square p-0\"\n              )}\n              title=\"Add Person Manually\"\n            >\n                <Plus size={20} />\n                {isSidebarOpen && <span className=\"whitespace-nowrap\">Add Member</span>}\n            </button>\n            \n            <button \n              onClick={() => setIsSidebarOpen(!isSidebarOpen)}\n              className=\"w-full flex justify-center p-2 text-slate-500 hover:text-slate-300\"\n            >\n              {isSidebarOpen ? <PanelLeftClose size={20}/> : <PanelLeft size={20} />}\n            </button>\n        </div>\n      </div>\n\n      {/* Main Content Area */}\n      <main className=\"flex-1 flex flex-col h-full overflow-hidden relative\">\n        <header className=\"h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur flex items-center justify-between px-6 shrink-0\">\n            <h2 className=\"text-lg font-medium text-white\">\n                {activeView === 'tree' && 'Family Tree Visualization'}\n                {activeView === 'editor' && 'Record Management'}\n                {activeView === 'smart-add' && 'AI Quick Import'}\n            </h2>\n            <div className=\"flex items-center gap-4\">\n                <div className=\"flex items-center gap-3 pr-4 border-r border-slate-800\">\n                   <div className=\"text-right hidden sm:block\">\n                       <div className=\"text-sm font-medium text-white\">{user.name}</div>\n                       <div className=\"text-xs text-slate-400\">Free Plan</div>\n                   </div>\n                   <img src={user.photoUrl} alt=\"User\" className=\"w-8 h-8 rounded-full border border-slate-600\" />\n                </div>\n                <button \n                    onClick={handleLogout}\n                    className=\"text-slate-400 hover:text-white transition-colors\"\n                    title=\"Sign Out\"\n                >\n                    <LogOut size={20} />\n                </button>\n            </div>\n        </header>\n\n        <div className=\"flex-1 overflow-hidden p-6 relative\">\n             {activeView === 'tree' && (\n                 <TreeVisualizer data={treeData} onSelectPerson={handleSelectPerson} />\n             )}\n\n             {activeView === 'editor' && (\n                 <div className=\"h-full max-w-4xl mx-auto bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl\">\n                    <EditorPanel \n                        person={selectedPersonId ? treeData.people[selectedPersonId] : null} \n                        onSave={handleSavePerson}\n                        onCancel={() => setActiveView('tree')}\n                        allPeople={peopleList}\n                    />\n                 </div>\n             )}\n\n             {activeView === 'smart-add' && (\n                 <div className=\"max-w-2xl mx-auto mt-10\">\n                    <SmartAdd onParsed={handleSmartAdd} />\n                 </div>\n             )}\n        </div>\n      </main>\n    </div>\n  );\n}\n\nexport default App;"
+            }
+          ]
+        }
+      ]
+    },
+    "createdTimestamp": 1764839938574,
+    "doneTimestamp": 1764839954946
+  },
+  {
+    "id": 23,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Rename the app to FamilyTreeAI",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764844464083
+  },
+  {
+    "id": 24,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Updating Naming Conventions**\n\nI'm currently working on systematically renaming the application to \"FamilyTreeAI\". I've pinpointed key files, including `index.html` and `App.tsx`, where I must perform a comprehensive find-and-replace for outdated names like \"AncestryAI.\" I'm being thorough to ensure a seamless and consistent transition across the application. I am going to search all other project files too.\n\n\n**Examining File Targets**\n\nI'm now focusing on a few specific files. The `index.html` file requires updates to the `<title>` tag. Also, the heading in `App.tsx` needs correction. Finally, I've checked `components/LoginScreen.tsx` where I have to change a heading. I've confirmed that the `metadata.json` file is already using the correct name, so no changes are needed there. I will move on to the next set of files.\n\n\n**Addressing Persistent Naming**\n\nI've made some progress on persistent naming. I've updated the `services/gedcomService.ts` to reflect the new application name. The `storageService.ts` DB constant now also correctly matches the application name. I've also updated `authService.ts`'s local storage key. This should ensure consistent naming throughout the application. I will continue searching for the remaining files.\n\n\n**Confirming Final Adjustments**\n\nI've made the final changes to persist the new naming convention across the codebase. Specifically, I've updated the `storageService.ts` to use `FamilyTreeAI_DB` as the DB name, and the `authService.ts` uses `familytreeai_user` for the local storage key. This concludes the primary renaming process. All previous names should be completely removed now. I will ensure thorough testing.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764844464083,
+    "doneTimestamp": 1764844534984
+  },
+  {
+    "id": 25,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "I will rename the application to **FamilyTreeAI** across the interface, database configuration, and export settings.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764844534984,
+    "doneTimestamp": 1764844534989
+  },
+  {
+    "id": 26,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "index.html",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update page title to FamilyTreeAI",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>FamilyTreeAI - Next Gen Genealogy</title>\n    <script src=\"https://cdn.tailwindcss.com\"></script>\n    <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\">\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            fontFamily: {\n              sans: ['Inter', 'sans-serif'],\n            },\n            colors: {\n              brand: {\n                50: '#f0f9ff',\n                100: '#e0f2fe',\n                500: '#0ea5e9',\n                600: '#0284c7',\n                700: '#0369a1',\n                900: '#0c4a6e',\n              }\n            }\n          }\n        }\n      }\n    </script>\n    <style>\n      body { background-color: #0f172a; color: #e2e8f0; }\n      /* Hide scrollbar for clean UI in panels */\n      .no-scrollbar::-webkit-scrollbar {\n          display: none;\n      }\n      .no-scrollbar {\n          -ms-overflow-style: none;\n          scrollbar-width: none;\n      }\n    </style>\n  <script type=\"importmap\">\n{\n  \"imports\": {\n    \"lucide-react\": \"https://aistudiocdn.com/lucide-react@^0.555.0\",\n    \"react/\": \"https://aistudiocdn.com/react@^19.2.0/\",\n    \"react\": \"https://aistudiocdn.com/react@^19.2.0\",\n    \"react-dom/\": \"https://aistudiocdn.com/react-dom@^19.2.0/\",\n    \"@google/genai\": \"https://aistudiocdn.com/@google/genai@^1.30.0\",\n    \"d3\": \"https://aistudiocdn.com/d3@^7.9.0\",\n    \"clsx\": \"https://aistudiocdn.com/clsx@^2.1.1\"\n  }\n}\n</script>\n</head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>"
+            }
+          ]
+        },
+        {
+          "path": "App.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update sidebar branding to FamilyTreeAI",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useState, useEffect } from 'react';\nimport { NAV_ITEMS } from './constants';\nimport { TreeData, Person, ViewMode, Gender } from './types';\nimport { TreeVisualizer } from './components/TreeVisualizer';\nimport { EditorPanel } from './components/EditorPanel';\nimport { SmartAdd } from './components/SmartAdd';\nimport { LoginScreen } from './components/LoginScreen';\nimport { authService, User } from './services/authService';\nimport { storageService } from './services/storageService';\nimport { generateGedcom } from './services/gedcomService';\nimport { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download } from 'lucide-react';\nimport clsx from 'clsx';\n\nfunction App() {\n  const [user, setUser] = useState<User | null>(null);\n  const [loading, setLoading] = useState(true);\n  \n  // Tree State\n  const [treeData, setTreeData] = useState<TreeData | null>(null);\n  const [activeView, setActiveView] = useState<ViewMode>('tree');\n  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);\n  const [isSidebarOpen, setIsSidebarOpen] = useState(true);\n\n  // Initialize Auth\n  useEffect(() => {\n    const currentUser = authService.getCurrentUser();\n    setUser(currentUser);\n    setLoading(false);\n  }, []);\n\n  // Initialize Data when User is present\n  useEffect(() => {\n    if (user) {\n      loadData();\n    }\n  }, [user]);\n\n  const loadData = async () => {\n    try {\n      const data = await storageService.loadTree();\n      setTreeData(data);\n    } catch (e) {\n      console.error(\"Failed to load tree data\", e);\n    }\n  };\n\n  // Helper to get array of people\n  const peopleList = treeData ? (Object.values(treeData.people) as Person[]) : [];\n\n  const handleSavePerson = async (updatedPerson: Person) => {\n    if (!treeData) return;\n\n    // Get the previous version of this person (if exists) to check for removed spouses\n    const oldPerson = treeData.people[updatedPerson.id];\n    const oldSpouseIds = oldPerson ? oldPerson.spouseIds : [];\n    const newSpouseIds = updatedPerson.spouseIds;\n\n    // 1. Identify Removed Spouses: IDs in old but not in new\n    const removedSpouseIds = oldSpouseIds.filter(id => !newSpouseIds.includes(id));\n    \n    // 2. Identify Added Spouses: IDs in new but not in old\n    const addedSpouseIds = newSpouseIds.filter(id => !oldSpouseIds.includes(id));\n\n    // Optimistic Update\n    setTreeData(prev => {\n      if (!prev) return null;\n      const newData = { ...prev };\n      \n      // Update Main Person\n      newData.people[updatedPerson.id] = updatedPerson;\n      \n      // Update Parent links (Children pointers)\n      if (updatedPerson.fatherId && newData.people[updatedPerson.fatherId]) {\n         const father = newData.people[updatedPerson.fatherId];\n         if (!father.childrenIds.includes(updatedPerson.id)) {\n            father.childrenIds = [...father.childrenIds, updatedPerson.id];\n            storageService.savePerson(father); // Background save\n         }\n      }\n      if (updatedPerson.motherId && newData.people[updatedPerson.motherId]) {\n         const mother = newData.people[updatedPerson.motherId];\n         if (!mother.childrenIds.includes(updatedPerson.id)) {\n            mother.childrenIds = [...mother.childrenIds, updatedPerson.id];\n            storageService.savePerson(mother); // Background save\n         }\n      }\n\n      // Handle Reciprocal Spouse Unlinking\n      removedSpouseIds.forEach(exSpouseId => {\n          const exSpouse = newData.people[exSpouseId];\n          if (exSpouse) {\n              exSpouse.spouseIds = exSpouse.spouseIds.filter(id => id !== updatedPerson.id);\n              storageService.savePerson(exSpouse);\n          }\n      });\n\n      // Handle Reciprocal Spouse Linking\n      addedSpouseIds.forEach(newSpouseId => {\n          const newSpouse = newData.people[newSpouseId];\n          if (newSpouse && !newSpouse.spouseIds.includes(updatedPerson.id)) {\n              newSpouse.spouseIds = [...newSpouse.spouseIds, updatedPerson.id];\n              storageService.savePerson(newSpouse);\n          }\n      });\n\n      return newData;\n    });\n\n    // Persist Main Person to DB\n    await storageService.savePerson(updatedPerson);\n\n    setSelectedPersonId(null);\n    setActiveView('tree');\n  };\n\n  const handleSmartAdd = async (partialPerson: Partial<Person>) => {\n    const newPerson: Person = {\n      id: crypto.randomUUID(),\n      firstName: partialPerson.firstName || 'Unknown',\n      lastName: partialPerson.lastName || 'Unknown',\n      gender: (partialPerson.gender as Gender) || Gender.Other,\n      spouseIds: [],\n      childrenIds: [],\n      birthDate: partialPerson.birthDate,\n      deathDate: partialPerson.deathDate,\n      birthPlace: partialPerson.birthPlace,\n      bio: partialPerson.bio,\n      fatherId: null,\n      motherId: null,\n    };\n    \n    // Optimistic update\n    setTreeData(prev => {\n        if(!prev) return null;\n        return {\n            ...prev,\n            people: { ...prev.people, [newPerson.id]: newPerson }\n        }\n    });\n\n    // Save to DB immediately so it exists for editing\n    await storageService.savePerson(newPerson);\n\n    setSelectedPersonId(newPerson.id);\n    setActiveView('editor');\n  };\n\n  const handleLogout = async () => {\n    await authService.logout();\n    setUser(null);\n    setTreeData(null);\n  };\n\n  const handleSelectPerson = (id: string) => {\n    setSelectedPersonId(id);\n    setActiveView('editor');\n  };\n\n  const createNewPerson = () => {\n    setSelectedPersonId(null);\n    setActiveView('editor');\n  };\n\n  const handleExportGedcom = () => {\n      if (!treeData) return;\n      const gedcomString = generateGedcom(treeData);\n      const blob = new Blob([gedcomString], { type: 'text/plain' });\n      const url = URL.createObjectURL(blob);\n      const a = document.createElement('a');\n      a.href = url;\n      a.download = `family_tree_${new Date().toISOString().split('T')[0]}.ged`;\n      document.body.appendChild(a);\n      a.click();\n      document.body.removeChild(a);\n      URL.revokeObjectURL(url);\n  };\n\n  if (loading) {\n    return (\n      <div className=\"h-screen w-full flex items-center justify-center bg-slate-950 text-brand-500\">\n        <Loader2 size={48} className=\"animate-spin\" />\n      </div>\n    );\n  }\n\n  if (!user) {\n    return <LoginScreen onLogin={() => setUser(authService.getCurrentUser())} />;\n  }\n\n  if (!treeData) {\n      return (\n        <div className=\"h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-4\">\n            <Loader2 size={32} className=\"animate-spin text-brand-500\" />\n            <p>Loading your family history...</p>\n        </div>\n      );\n  }\n\n  return (\n    <div className=\"flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden\">\n      {/* Sidebar Navigation */}\n      <div className={clsx(\"flex flex-col border-r border-slate-800 bg-slate-900 transition-all duration-300\", isSidebarOpen ? \"w-64\" : \"w-16\")}>\n        <div className=\"p-4 border-b border-slate-800 flex items-center gap-3\">\n          <div className=\"bg-brand-600 p-2 rounded-lg shrink-0\">\n            <Leaf size={24} className=\"text-white\" />\n          </div>\n          {isSidebarOpen && <h1 className=\"font-bold text-xl tracking-tight text-white whitespace-nowrap\">FamilyTreeAI</h1>}\n        </div>\n\n        <nav className=\"flex-1 p-2 space-y-1\">\n          {NAV_ITEMS.map(item => (\n            <button\n              key={item.id}\n              onClick={() => setActiveView(item.id as ViewMode)}\n              className={clsx(\n                \"w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors\",\n                activeView === item.id\n                  ? \"bg-brand-900/50 text-brand-400 border border-brand-800\"\n                  : \"text-slate-400 hover:bg-slate-800 hover:text-slate-200\"\n              )}\n              title={!isSidebarOpen ? item.label : undefined}\n            >\n              <span className=\"shrink-0\">{item.icon}</span>\n              {isSidebarOpen && <span className=\"font-medium whitespace-nowrap\">{item.label}</span>}\n            </button>\n          ))}\n          \n          <div className=\"border-t border-slate-800 my-2\"></div>\n\n           <button\n              onClick={handleExportGedcom}\n              className=\"w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-slate-400 hover:bg-slate-800 hover:text-slate-200\"\n              title={!isSidebarOpen ? \"Export GEDCOM\" : undefined}\n            >\n              <span className=\"shrink-0\"><Download size={20} /></span>\n              {isSidebarOpen && <span className=\"font-medium whitespace-nowrap\">Export GEDCOM</span>}\n            </button>\n\n        </nav>\n\n        <div className=\"p-4 border-t border-slate-800\">\n            <button \n              onClick={createNewPerson}\n              className={clsx(\n                  \"w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-brand-600 text-white p-3 rounded-lg transition-all mb-4\",\n                  !isSidebarOpen && \"aspect-square p-0\"\n              )}\n              title=\"Add Person Manually\"\n            >\n                <Plus size={20} />\n                {isSidebarOpen && <span className=\"whitespace-nowrap\">Add Member</span>}\n            </button>\n            \n            <button \n              onClick={() => setIsSidebarOpen(!isSidebarOpen)}\n              className=\"w-full flex justify-center p-2 text-slate-500 hover:text-slate-300\"\n            >\n              {isSidebarOpen ? <PanelLeftClose size={20}/> : <PanelLeft size={20} />}\n            </button>\n        </div>\n      </div>\n\n      {/* Main Content Area */}\n      <main className=\"flex-1 flex flex-col h-full overflow-hidden relative\">\n        <header className=\"h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur flex items-center justify-between px-6 shrink-0\">\n            <h2 className=\"text-lg font-medium text-white\">\n                {activeView === 'tree' && 'Family Tree Visualization'}\n                {activeView === 'editor' && 'Record Management'}\n                {activeView === 'smart-add' && 'AI Quick Import'}\n            </h2>\n            <div className=\"flex items-center gap-4\">\n                <div className=\"flex items-center gap-3 pr-4 border-r border-slate-800\">\n                   <div className=\"text-right hidden sm:block\">\n                       <div className=\"text-sm font-medium text-white\">{user.name}</div>\n                       <div className=\"text-xs text-slate-400\">Free Plan</div>\n                   </div>\n                   <img src={user.photoUrl} alt=\"User\" className=\"w-8 h-8 rounded-full border border-slate-600\" />\n                </div>\n                <button \n                    onClick={handleLogout}\n                    className=\"text-slate-400 hover:text-white transition-colors\"\n                    title=\"Sign Out\"\n                >\n                    <LogOut size={20} />\n                </button>\n            </div>\n        </header>\n\n        <div className=\"flex-1 overflow-hidden p-6 relative\">\n             {activeView === 'tree' && (\n                 <TreeVisualizer data={treeData} onSelectPerson={handleSelectPerson} />\n             )}\n\n             {activeView === 'editor' && (\n                 <div className=\"h-full max-w-4xl mx-auto bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl\">\n                    <EditorPanel \n                        person={selectedPersonId ? treeData.people[selectedPersonId] : null} \n                        onSave={handleSavePerson}\n                        onCancel={() => setActiveView('tree')}\n                        allPeople={peopleList}\n                    />\n                 </div>\n             )}\n\n             {activeView === 'smart-add' && (\n                 <div className=\"max-w-2xl mx-auto mt-10\">\n                    <SmartAdd onParsed={handleSmartAdd} />\n                 </div>\n             )}\n        </div>\n      </main>\n    </div>\n  );\n}\n\nexport default App;"
+            }
+          ]
+        },
+        {
+          "path": "components/LoginScreen.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update login screen branding to FamilyTreeAI",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useState } from 'react';\nimport { authService } from '../services/authService';\nimport { Network, ArrowRight, Loader2 } from 'lucide-react';\n\ninterface LoginScreenProps {\n  onLogin: () => void;\n}\n\nexport const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {\n  const [loading, setLoading] = useState(false);\n\n  const handleGoogleLogin = async () => {\n    setLoading(true);\n    try {\n      await authService.loginWithGoogle();\n      onLogin();\n    } catch (e) {\n      console.error(e);\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div className=\"min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden\">\n      {/* Background Decor */}\n      <div className=\"absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none\">\n         <div className=\"absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[100px]\"></div>\n         <div className=\"absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]\"></div>\n      </div>\n\n      <div className=\"z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-8 text-center\">\n        <div className=\"w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-brand-600/20\">\n          <Network size={32} className=\"text-white\" />\n        </div>\n\n        <h1 className=\"text-3xl font-bold text-white mb-2 tracking-tight\">FamilyTreeAI</h1>\n        <p className=\"text-slate-400 mb-8\">\n          The next generation of genealogy. Build your family tree with the power of artificial intelligence.\n        </p>\n\n        <button\n          onClick={handleGoogleLogin}\n          disabled={loading}\n          className=\"w-full bg-white hover:bg-slate-50 text-slate-900 font-semibold py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-3 mb-6 group relative overflow-hidden\"\n        >\n          {loading ? (\n             <Loader2 size={20} className=\"animate-spin text-slate-600\" />\n          ) : (\n            <>\n              {/* Google G Logo SVG */}\n              <svg className=\"w-5 h-5\" viewBox=\"0 0 24 24\">\n                <path\n                  d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z\"\n                  fill=\"#4285F4\"\n                />\n                <path\n                  d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"\n                  fill=\"#34A853\"\n                />\n                <path\n                  d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\"\n                  fill=\"#FBBC05\"\n                />\n                <path\n                  d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\"\n                  fill=\"#EA4335\"\n                />\n              </svg>\n              <span>Continue with Google</span>\n              <ArrowRight size={18} className=\"opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all text-slate-400\" />\n            </>\n          )}\n        </button>\n\n        <div className=\"text-xs text-slate-500\">\n          By clicking continue, you agree to our <span className=\"underline cursor-pointer hover:text-slate-400\">Terms of Service</span> and <span className=\"underline cursor-pointer hover:text-slate-400\">Privacy Policy</span>.\n        </div>\n      </div>\n    </div>\n  );\n};"
+            }
+          ]
+        },
+        {
+          "path": "services/authService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update local storage key for authentication persistence",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "\n// Mock User Interface\nexport interface User {\n  id: string;\n  name: string;\n  email: string;\n  photoUrl: string;\n}\n\n// In a real app, this would use Firebase Auth or Google Identity Services\nexport const authService = {\n  \n  loginWithGoogle: async (): Promise<User> => {\n    // Simulate network delay\n    await new Promise(resolve => setTimeout(resolve, 1500));\n    \n    // Return mock user\n    const user: User = {\n      id: 'usr_123456',\n      name: 'Alex Pendragon',\n      email: 'alex.pendragon@example.com',\n      photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex'\n    };\n    \n    localStorage.setItem('familytreeai_user', JSON.stringify(user));\n    return user;\n  },\n\n  logout: async (): Promise<void> => {\n    await new Promise(resolve => setTimeout(resolve, 500));\n    localStorage.removeItem('familytreeai_user');\n  },\n\n  getCurrentUser: (): User | null => {\n    const stored = localStorage.getItem('familytreeai_user');\n    return stored ? JSON.parse(stored) : null;\n  }\n};"
+            }
+          ]
+        },
+        {
+          "path": "services/storageService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update IndexedDB database name",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "\nimport { Person, TreeData } from '../types';\nimport { INITIAL_DATA } from '../constants';\n\nconst DB_NAME = 'FamilyTreeAI_DB';\nconst DB_VERSION = 1;\nconst STORE_NAME = 'people';\n\n// Helper to open database\nconst openDB = (): Promise<IDBDatabase> => {\n  return new Promise((resolve, reject) => {\n    const request = indexedDB.open(DB_NAME, DB_VERSION);\n\n    request.onerror = () => reject(request.error);\n    \n    request.onupgradeneeded = (event) => {\n      const db = (event.target as IDBOpenDBRequest).result;\n      if (!db.objectStoreNames.contains(STORE_NAME)) {\n        db.createObjectStore(STORE_NAME, { keyPath: 'id' });\n      }\n    };\n\n    request.onsuccess = () => resolve(request.result);\n  });\n};\n\nexport const storageService = {\n  // Load all people to reconstruct the tree\n  async loadTree(): Promise<TreeData> {\n    const db = await openDB();\n    return new Promise((resolve, reject) => {\n      const transaction = db.transaction(STORE_NAME, 'readonly');\n      const store = transaction.objectStore(STORE_NAME);\n      const request = store.getAll();\n\n      request.onsuccess = () => {\n        const peopleList = request.result as Person[];\n        \n        // If DB is empty, seed it with initial data\n        if (peopleList.length === 0) {\n          this.seedData().then(resolve).catch(reject);\n        } else {\n          // Convert array back to Record<string, Person>\n          const peopleMap: Record<string, Person> = {};\n          peopleList.forEach(p => peopleMap[p.id] = p);\n          \n          resolve({\n            rootId: '1', // In a real app, this might be stored in a separate 'meta' store\n            people: peopleMap\n          });\n        }\n      };\n      \n      request.onerror = () => reject(request.error);\n    });\n  },\n\n  // Save or Update a single person\n  async savePerson(person: Person): Promise<void> {\n    const db = await openDB();\n    return new Promise((resolve, reject) => {\n      const transaction = db.transaction(STORE_NAME, 'readwrite');\n      const store = transaction.objectStore(STORE_NAME);\n      const request = store.put(person);\n\n      request.onsuccess = () => resolve();\n      request.onerror = () => reject(request.error);\n    });\n  },\n\n  // Seed initial data if empty\n  async seedData(): Promise<TreeData> {\n    const db = await openDB();\n    return new Promise((resolve, reject) => {\n      const transaction = db.transaction(STORE_NAME, 'readwrite');\n      const store = transaction.objectStore(STORE_NAME);\n      \n      const people = Object.values(INITIAL_DATA.people);\n      let completed = 0;\n\n      people.forEach(person => {\n        store.put(person);\n        completed++;\n      });\n\n      transaction.oncomplete = () => resolve(INITIAL_DATA);\n      transaction.onerror = () => reject(transaction.error);\n    });\n  },\n  \n  // Clear database (helper for debugging/logout if needed)\n  async clearDatabase(): Promise<void> {\n      const db = await openDB();\n      return new Promise((resolve, reject) => {\n          const transaction = db.transaction(STORE_NAME, 'readwrite');\n          const store = transaction.objectStore(STORE_NAME);\n          store.clear();\n          transaction.oncomplete = () => resolve();\n      });\n  }\n};"
+            }
+          ]
+        },
+        {
+          "path": "services/gedcomService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update GEDCOM source header to FamilyTreeAI",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import { TreeData, Person, Gender } from '../types';\n\n/**\n * Helper to format date for GEDCOM (YYYY-MM-DD -> DD MMM YYYY)\n * Simple implementation: returns unmodified or basic format\n */\nconst formatGedcomDate = (dateStr?: string): string => {\n  if (!dateStr) return '';\n  const date = new Date(dateStr);\n  if (isNaN(date.getTime())) return dateStr;\n  \n  const day = date.getDate();\n  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();\n  const year = date.getFullYear();\n  return `${day} ${month} ${year}`;\n};\n\n/**\n * Generates a GEDCOM 5.5.1 compatible string from TreeData\n */\nexport const generateGedcom = (data: TreeData): string => {\n  const { people } = data;\n  const lines: string[] = [];\n  const peopleList = Object.values(people);\n\n  // 1. HEAD\n  lines.push('0 HEAD');\n  lines.push('1 SOUR FamilyTreeAI');\n  lines.push('1 GEDC');\n  lines.push('2 VERS 5.5.1');\n  lines.push('2 FORM LINEAGE-LINKED');\n  lines.push('1 CHAR UTF-8');\n\n  // 2. INDIVIDUALS (INDI)\n  peopleList.forEach(person => {\n    lines.push(`0 @I${person.id}@ INDI`);\n    lines.push(`1 NAME ${person.firstName} /${person.lastName}/`);\n    lines.push(`2 GIVN ${person.firstName}`);\n    lines.push(`2 SURN ${person.lastName}`);\n    lines.push(`1 SEX ${person.gender === Gender.Male ? 'M' : person.gender === Gender.Female ? 'F' : 'U'}`);\n    \n    if (person.birthDate) {\n      lines.push('1 BIRT');\n      lines.push(`2 DATE ${formatGedcomDate(person.birthDate)}`);\n      if (person.birthPlace) lines.push(`2 PLAC ${person.birthPlace}`);\n    }\n\n    if (person.deathDate) {\n      lines.push('1 DEAT');\n      lines.push(`2 DATE ${formatGedcomDate(person.deathDate)}`);\n    }\n\n    if (person.bio) {\n      lines.push('1 NOTE ' + person.bio.replace(/\\n/g, ' '));\n    }\n\n    // Link to families where this person is a child\n    if (person.fatherId || person.motherId) {\n       // We construct a family ID based on parents. \n       // Logic: Family ID is F_{FatherID}_{MotherID}\n       // If one is missing, we use 'U' (Unknown)\n       const fid = `F_${person.fatherId || 'U'}_${person.motherId || 'U'}`;\n       lines.push(`1 FAMC @${fid}@`);\n    }\n\n    // Link to families where this person is a spouse\n    // We will handle FAMS lines by iterating known spouses\n    person.spouseIds.forEach(spouseId => {\n        // To avoid duplicate family records, we sort IDs to make a unique key\n        const ids = [person.id, spouseId].sort();\n        const fid = `F_${ids[0]}_${ids[1]}`;\n        lines.push(`1 FAMS @${fid}@`);\n    });\n  });\n\n  // 3. FAMILIES (FAM)\n  // We need to deduce families. A family exists if:\n  // a) A child has parents\n  // b) Two people are spouses\n  \n  const families = new Map<string, { husb?: string, wife?: string, children: string[] }>();\n\n  // Helper to get/create family\n  const getFamily = (key: string) => {\n      if (!families.has(key)) {\n          families.set(key, { children: [] });\n      }\n      return families.get(key)!;\n  };\n\n  peopleList.forEach(person => {\n      // Case A: Child relationship\n      if (person.fatherId || person.motherId) {\n          const fKey = `F_${person.fatherId || 'U'}_${person.motherId || 'U'}`;\n          const fam = getFamily(fKey);\n          fam.children.push(person.id);\n          if (person.fatherId) fam.husb = person.fatherId;\n          if (person.motherId) fam.wife = person.motherId;\n      }\n\n      // Case B: Spouse relationship\n      // Note: This might overlap with Case A if they have children, \n      // but if they have NO children, we still need a family record.\n      person.spouseIds.forEach(spouseId => {\n           const ids = [person.id, spouseId].sort();\n           const fKey = `F_${ids[0]}_${ids[1]}`;\n           const fam = getFamily(fKey);\n           \n           // Assign Husband/Wife based on gender if possible, otherwise by sort order\n           // This is a simplification; robust logic checks gender of both\n           if (person.gender === Gender.Male) fam.husb = person.id;\n           else if (person.gender === Gender.Female) fam.wife = person.id;\n           \n           const spouse = people[spouseId];\n           if (spouse) {\n               if (spouse.gender === Gender.Male) fam.husb = spouseId;\n               else if (spouse.gender === Gender.Female) fam.wife = spouseId;\n           }\n\n           // Fallback if genders are same or unknown\n           if (!fam.husb && !fam.wife) {\n               fam.husb = ids[0];\n               fam.wife = ids[1];\n           }\n      });\n  });\n\n  // Output FAM records\n  families.forEach((fam, key) => {\n      lines.push(`0 @${key}@ FAM`);\n      if (fam.husb) lines.push(`1 HUSB @I${fam.husb}@`);\n      if (fam.wife) lines.push(`1 WIFE @I${fam.wife}@`);\n      fam.children.forEach(childId => {\n          lines.push(`1 CHIL @I${childId}@`);\n      });\n  });\n\n  // 4. TRAILER\n  lines.push('0 TRLR');\n\n  return lines.join('\\n');\n};"
+            }
+          ]
+        }
+      ]
+    },
+    "createdTimestamp": 1764844534990,
+    "doneTimestamp": 1764844541412
+  },
+  {
+    "id": 27,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Let us add a birth/death place, a label for the relationship",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764908457912
+  },
+  {
+    "id": 28,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Defining Core Attributes**\n\nI'm currently focused on incorporating \"birth place\" and \"death place\" as crucial fields. Thinking further, a \"label for the relationship\" is also a priority to enhance clarity, potentially as an edge label in the visualization. I'm aiming to make these new attributes impactful for clarity and utility.\n\n\n**Refining Place Data**\n\nI'm now zeroing in on integrating `deathPlace` into the code, noticing its absence in the UI and services, even though the `Person` interface has `birthPlace`. The existing Gemini service parsing will need updates to include `deathPlace` in the schema. My immediate next steps involve adding the necessary input fields in the editor panel for `birthPlace` and `deathPlace`, followed by adjusting the relevant backend services.\n\n\n**Revising Visualization Labels**\n\nI'm now contemplating how to best incorporate relationship labels within the visualizer. My plan involves experimenting with tooltips and potentially small link labels. I'm considering clarifying parent roles as \"Father\" or \"Mother\". I'm also examining the editor to see if we can accommodate custom descriptions for relationships. I'm focusing on \"Father\", \"Mother\", and \"Spouse\" as key relationship types.\n\n\n**Incorporating Relationship Data**\n\nI'm now integrating relationship labels into the D3 visualizer. Considering the current parent-child focus, I'll add tooltips to the links to show relationship types. I'll also add `birthPlace` and `deathPlace` fields to the Editor and update the data model and GEDCOM export. My focus is on clear, concise representation, and enhancing place information within the visualizations.\n\n\n**Enhancing Node Details**\n\nI'm now zeroing in on improving node details within the visualizer. I'll add tooltips to nodes, displaying birth and death place information. The editor will get inputs for birth and death places, and I'll also add a \"Relationship\" context to the EditorPanel. I'm focusing on \"Father\", \"Mother\", \"Spouse\" labels for the editor.\n\n\n**Updating Data Structures**\n\nI've decided against adding labels to links in the visualizer; the structure already makes relationships clear. My focus is on place extraction via AI now. I'm also refining \"relationship label\" to mean more specific terms like \"Wife\" or \"Husband\". I'm starting by adding `deathPlace` to `types.ts`, the Gemini service schema, and GEDCOM export, and then moving to editor updates. My plan now is to incorporate birth and death places into node tooltips. I've also noted that `birthPlace` is missing from the editor.\n\n\n**Expanding Node Information**\n\nI'm now focused on fleshing out node details. I'll add `deathPlace` to the `Person` type, update the Gemini service to parse it, and adjust the GEDCOM export to include `DEAT.PLAC`. I'll also add a `title` attribute to D3 paths for more descriptive parent-child relationships and update tooltips to visualize the new data. My plan prioritizes making these new fields presentable within the visualizer.\n\n\n**Prioritizing Field Integration**\n\nI'm now integrating `deathPlace` into the relevant code. This includes adding the field to `schema.properties`, the GEDCOM export logic, and the editor panel. I'm also adding native browser tooltips to the visualizer for more descriptive node details, displaying birth and death locations. My current focus is to ensure the editor is fully equipped for place-related data. I've decided to postpone complex relationship labelling for the time being.\n\n\n**Adding Death Place Integration**\n\nI'm now integrating the `deathPlace` field throughout the application. It needs to be mapped in `handleSmartAdd`. I'll update `types.ts`, the Gemini service, and GEDCOM export. I'll also add input fields in the editor, near existing date fields, and tooltips in the visualizer. My current plan involves adding native tooltips to links to display relationship types.\n\n\n**Improving Tooltip Details**\n\nI'm now integrating death place details into the visualizer. I'll utilize the `<title>` tag for simple tooltips to enhance node details. My focus is now shifting to the \"relationship\" labels. I'll update the editor panel to use \"Spouse: Name\", and label the father/mother selects clearly. I'm prioritizing these enhancements to improve user experience.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764908457912,
+    "doneTimestamp": 1764908538468
+  },
+  {
+    "id": 29,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "I will implement the **Birth Place** and **Death Place** fields across the application (Database, AI, Editor, and Export) and add relationship labels via tooltips in the visualization.\n\nHere are the changes:\n\n1.  **`types.ts`**: Added `deathPlace` to the Person model.\n2.  **`services/geminiService.ts`**: Updated AI schema to extract death locations.\n3.  **`services/gedcomService.ts`**: Updated export to include `DEAT.PLAC`.\n4.  **`App.tsx`**: Updated `handleSmartAdd` to map the new fields.\n5.  **`components/EditorPanel.tsx`**: Added input fields for Birth/Death places.\n6.  **`components/TreeVisualizer.tsx`**: Added rich tooltips to nodes (showing places) and links (showing \"Parent of...\" relationship labels).\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1764908538468,
+    "doneTimestamp": 1764908538521
+  },
+  {
+    "id": 30,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "types.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Added deathPlace to Person interface"
+        },
+        {
+          "path": "services/geminiService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Updated schema to include deathPlace in AI parsing"
+        },
+        {
+          "path": "services/gedcomService.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Added DEAT.PLAC export support"
+        },
+        {
+          "path": "components/EditorPanel.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Added Birth Place and Death Place inputs"
+        },
+        {
+          "path": "components/TreeVisualizer.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Added tooltips for nodes and links"
+        },
+        {
+          "path": "App.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Updated handleSmartAdd to include deathPlace"
+        }
+      ]
+    },
+    "createdTimestamp": 1764908539596,
+    "doneTimestamp": 1764908541362
+  },
+  {
+    "id": 31,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Let's add the ability to add a photo. ",
+      "files": [],
+      "fileUploads": [],
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765406438047
+  },
+  {
+    "id": 32,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Implementing Photo Functionality**\n\nI'm currently focused on the `Person` interface and how to extend it to accommodate photos. It seems adding a `photo` field is the initial step, followed by updating the UI in `EditorPanel.tsx`. The goal is to allow users to either upload photos directly or input a URL. Since this work is client-side, I'll need to figure out the best approach to handle image data.\n\n\n**Adding Photo Storage Options**\n\nI'm evaluating options for storing the photo data. IndexedDB for large files is heavy; a URL input is easy. Base64 encoding for the file picker feels more \"app-like\" for this demo. I'm focusing on modifying `types.ts` to add `photoUrl`. Then, in `EditorPanel.tsx`, I'll implement either a file input (converting to Base64) or a URL field. The `TreeVisualizer.tsx` component needs a photo display update; I'm considering using the existing gender circle as a clipping mask. I'm also considering potential prompt improvements for the AI bio generation when a photo is present in `services/geminiService.ts`.\n\n\n**Reviewing Storage Integration**\n\nI'm now revisiting `App.tsx` and `storageService.ts`, confirming they'll work with the `Person` interface's `photo` string. IndexedDB should be fine for now, even with Base64 strings. I've updated `types.ts` with the new `photo` field, and I'm adding a file input in `EditorPanel.tsx` to handle file selection and Base64 conversion. Next, I'll update the `TreeVisualizer.tsx` component to display the uploaded photo within the node circle. I'm postponing GEDCOM updates for multimedia to focus on the core functionality. I will also make sure to check if Gemini needs more information about the photo.\n\n\n**Integrating Photo Upload**\n\nI'm now implementing the photo upload functionality in `EditorPanel.tsx`. The plan is to include an upload area with a preview and a remove button. I've updated `types.ts` to include the `photo` field, which will hold either a Base64 string or a URL. Simultaneously, I'm adapting the `TreeVisualizer.tsx` component to display the uploaded photo within the node's circle using an `<image>` tag and `clipPath` for visual effects. I'm focusing on ensuring proper SVG rendering and image scaling. Specifically, I'm checking if `node.data.attributes.photo` exists, then applying the image using `clip-path` as demonstrated above.\n\n\n**Enhancing Image Handling**\n\nI'm presently working on implementing the image upload process. I'm adding a `handleImageUpload` function to manage file input and use `FileReader` for `readAsDataURL` conversion. Next, I'll update `TreeVisualizer.tsx` to incorporate the `photo` attribute within the hierarchy and enhance the SVG rendering. I'll also check `App.tsx` and the initialization process of smart add features. GEDCOM updates will wait due to base64 size implications.\n\n\n**Defining Photo Field**\n\nI'm now incorporating a `photo` field into both the `Person` interface and `D3NodeDatum` within `types.ts`. This involves updating `types.ts` to include `photo?: string;` in both interfaces. I need to ensure compatibility with existing structures and anticipate how this will influence related components. The goal is to provide a consistent approach to managing and displaying photo data across the application.\n\n\n**Adding Visual Elements**\n\nI'm now integrating photo display elements in `EditorPanel.tsx` and `TreeVisualizer.tsx`.  In the editor, I'm adding an avatar image with upload, remove buttons, and a file input.  For the tree, I'm adding a circular image mask using an `<image>` tag. I also want to preserve the colored gender border on tree nodes.  I need to modify `components/SmartAdd.tsx` for type compatibility.\n\n\n**Adding Input Elements**\n\nI'm now adding a file input element with a file reader to `EditorPanel.tsx` to read the photo. I'm also adding a display for the avatar with upload and remove controls. I'll need to figure out how to update `Person` data type correctly. I've updated the `buildHierarchy` function to send the image path, and I'm updating the `TreeVisualizer` to render the photo properly with the image and clip path. I'm using `Camera` and `Trash2` lucide icons.\n\n\n**Prioritizing Visual Hierarchy**\n\nI'm now optimizing the `TreeVisualizer` component.  I've decided to prioritize a clear visual hierarchy. When a photo is present, I'll render the image using a clip path, ensuring it's clearly displayed.  Then, I'll add a gender-colored border ring on top of the image or circle, which will be filled with `none` and stroke with gender color, providing a clear visual cue even when an image is present.  This ensures gender identification regardless of photo availability.\n\n\n**Adjusting Image Rendering**\n\nI'm currently working to modify how the photo and gender elements render in the `TreeVisualizer`. I've decided on an approach to ensure gender identification regardless of photo presence. I will prioritize rendering the photo with a clip path. Then, I'll add a gender border. This will involve updating the logic in `TreeVisualizer.tsx` to handle the conditional rendering. I'll focus on getting the stacking order of photo and gender border correct and test the effects in different states. I'll need to update `App.tsx` and confirm no destructurings break anything.\n\n\n**Finalizing Data Structures**\n\nI'm making a key adjustment to the `Person` interface and `D3NodeDatum` within `types.ts`. I want a defined object, so I'll add `photo: undefined` or just let it be optional. This will ensure predictable data behavior across the application. Now I will write the XML.\n\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765406438047,
+    "doneTimestamp": 1765406471072
+  },
+  {
+    "id": 33,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "I will add the functionality to upload and display photos for family members.\n\nHere is the plan:\n1.  **Update `types.ts`**: Add the `photo` field to the `Person` and `D3NodeDatum` interfaces.\n2.  **Update `components/EditorPanel.tsx`**: Add a photo upload area (drag & drop or click) with a preview, utilizing `FileReader` to convert images to Base64 strings for storage.\n3.  **Update `components/TreeVisualizer.tsx`**: Modify the D3 node rendering to display the photo (masked in a circle) if available, while maintaining a gender-coded border.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765406471072,
+    "doneTimestamp": 1765406471078
+  },
+  {
+    "id": 34,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "types.ts",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Add photo field to Person and D3NodeDatum interfaces",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "export enum Gender {\n  Male = 'Male',\n  Female = 'Female',\n  Other = 'Other'\n}\n\nexport interface Person {\n  id: string;\n  firstName: string;\n  lastName: string;\n  gender: Gender;\n  birthDate?: string;\n  birthPlace?: string;\n  deathDate?: string;\n  deathPlace?: string;\n  bio?: string;\n  photo?: string; // Base64 string or URL\n  // Relationships\n  fatherId?: string | null;\n  motherId?: string | null;\n  spouseIds: string[];\n  childrenIds: string[];\n}\n\nexport interface TreeData {\n  people: Record<string, Person>;\n  rootId: string; // The primary ancestor to start the visualization from\n}\n\nexport interface D3NodeDatum {\n  name: string;\n  attributes: {\n    id: string;\n    gender: Gender;\n    birthDate?: string;\n    birthPlace?: string;\n    deathDate?: string;\n    deathPlace?: string;\n    photo?: string;\n  };\n  children?: D3NodeDatum[];\n}\n\nexport type ViewMode = 'editor' | 'tree' | 'smart-add';"
+            }
+          ]
+        },
+        {
+          "path": "components/EditorPanel.tsx",
+          "generationType": 1,
+          "isDone": false,
+          "description": "Add photo upload interface to the editor panel",
+          "errorWhileGenerating": true
+        }
+      ]
+    },
+    "createdTimestamp": 1765406471163,
+    "doneTimestamp": 1765406472870
+  },
+  {
+    "id": 35,
+    "author": "model",
+    "payload": {
+      "type": "error",
+      "error": "An internal error occurred.",
+      "metadata": {
+        "message": "Failed to run code assistant. Please try again."
+      },
+      "isCancelError": false,
+      "isLoopingError": false
+    },
+    "createdTimestamp": 1765406499974,
+    "doneTimestamp": 1765406499974
+  },
+  {
+    "id": 37,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "There was an unexpected error. Finish what you were doing.",
+      "files": [],
+      "fileUploads": [],
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765406875555
+  },
+  {
+    "id": 38,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Considering Photo Uploads**\n\nI'm currently focused on the photo upload feature. I've begun to update the `types.ts` file. Specifically, I'm adding a `photo` field to the `Person` and `D3NodeDatum` interfaces to allow for image storage in the model. This will be integrated within the `EditorPanel.tsx` component, including functionality for uploading and displaying the chosen image.\n\n\n**Adding Image Display**\n\nI've completed the update to `types.ts`, ensuring the `photo` field is correctly integrated. Now, I'm working on `components/EditorPanel.tsx` to handle image uploads, implementing a drag-and-drop area and preview. Finally, I'll integrate the image display within `TreeVisualizer.tsx`, making sure it's masked as a circle and maintains the gender-coded border. This will give the tree nodes a much better look.\n\n\n**Refining Image Integration**\n\nI'm now fully immersed in the practical implementation.  It seems `types.ts` already includes the necessary `photo` fields as I had specified previously.  Therefore, I'll now be concentrating on the integration within the `EditorPanel.tsx` component, ensuring the photo input field works smoothly with image display.  I'm also considering potential improvements to the user experience.  I will then move to checking the TreeVisualizer.tsx file.\n\n\n**Completing Photo Display**\n\nI'm now fully focused on updating `TreeVisualizer.tsx` to display uploaded photos. Currently, the tree visualization only shows gender-coded circles. I'll integrate the photo display logic within the `<circle>` element, ensuring images are masked as circles, and the existing gender-based styling persists. I aim to achieve a seamless integration that doesn't disrupt the overall structure and aesthetics.\n\n\n",
+      "cMarkNode": {},
+      "errorWhileThinking": true
+    },
+    "createdTimestamp": 1765406875555,
+    "doneTimestamp": 1765409759334
+  },
+  {
+    "id": 39,
+    "author": "model",
+    "payload": {
+      "type": "error",
+      "error": "An internal error occurred.",
+      "metadata": {
+        "message": "Failed to run code assistant. Please try again."
+      },
+      "isCancelError": false,
+      "isLoopingError": false
+    },
+    "createdTimestamp": 1765409759334,
+    "doneTimestamp": 1765409759334
+  },
+  {
+    "id": 40,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "There was an unexpected error. Finish what you were doing.",
+      "files": [],
+      "fileUploads": [],
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765409783840
+  },
+  {
+    "id": 41,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Examining Visualizer Component**\n\nI've been working on integrating photo uploads into person records. I recently added the `photo` field to `types.ts` and updated the `EditorPanel.tsx` to handle file uploads. My next step is to examine the `components/TreeVisualizer.tsx` component. I need to ensure it correctly renders the uploaded photo when it's available in the record.\n\n\n**Integrating Image Rendering**\n\nI'm currently focused on the `TreeVisualizer` component. While the `types.ts` and `EditorPanel.tsx` updates are in place, I need to integrate the photo rendering. The existing code uses gender for fill, but my intention is to use the `photo` field for an image display using `<clipPath>` or `<image>`. My next move involves crafting the appropriate SVG updates.\n\n\n**Revising Node Rendering**\n\nI'm now revising the node rendering logic within `TreeVisualizer.tsx`. My focus is on rendering the uploaded photo. I'm choosing between clip paths with `<defs>` or a simpler `<image>` element clipped by a circle. D3 nodes are SVG groups, so I can append the `<image>` element if `node.data.attributes.photo` exists; otherwise, I'll render the `<circle>`.  I'm also reviewing `EditorPanel.tsx` to ensure complete file output, and verifying `types.ts` is in sync with `D3NodeDatum` regarding the `photo` field.\n\n\n**Enhancing Photo Uploads**\n\nI'm now focusing on `EditorPanel.tsx`. I'll provide the comprehensive implementation to ensure smooth photo uploads. I'll also check the `storageService.ts`, making sure it can handle the Base64 image strings. While I know IndexedDB generally handles this, it's good to be certain. I've already checked the 2MB limit in the editor panel, so that's covered. My goal is to make sure the editor is fully capable of handling image output.\n\n\n**Adjusting Image Clip Path**\n\nI've just refined the photo rendering logic. I'm moving toward a `<clipPath>` approach with `<defs>`, using a circle as the clip shape. I'm adding an SVG `<image>` element with `href` set to `node.data.attributes.photo` within the existing node groups. I've set the `x` and `y` attributes to position it and used a slightly larger circle for a border effect. This aims for a clean integration with the existing D3 structure and provides more control over the appearance.\n\n\n**Streamlining Photo Display**\n\nI'm now simplifying the photo rendering. I'll maintain the outer circle as a gender border. If a photo exists, I'll overlay the image directly, removing the clip path complexities. This should make the code cleaner and more efficient. The `<image>` element will now be positioned directly within the existing circle.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765409783840,
+    "doneTimestamp": 1765409866039
+  },
+  {
+    "id": 42,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "I will complete the integration of photo functionality by updating the `EditorPanel` to fully support photo uploads and managing person details, and updating the `TreeVisualizer` to render these photos within the family tree nodes.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1765409866039,
+    "doneTimestamp": 1765409866040
+  },
+  {
+    "id": 43,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "components/EditorPanel.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Complete EditorPanel implementation with photo upload support",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useState, useEffect, useRef } from 'react';\nimport { Person, Gender } from '../types';\nimport { generateBio } from '../services/geminiService';\nimport { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon } from 'lucide-react';\n\ninterface EditorPanelProps {\n  person: Person | null;\n  onSave: (person: Person) => void;\n  onCancel: () => void;\n  allPeople: Person[];\n}\n\nexport const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onCancel, allPeople }) => {\n  const [formData, setFormData] = useState<Partial<Person>>({\n    gender: Gender.Male,\n    firstName: '',\n    lastName: '',\n    spouseIds: [],\n    childrenIds: [],\n  });\n  \n  const [generatingBio, setGeneratingBio] = useState(false);\n  const fileInputRef = useRef<HTMLInputElement>(null);\n\n  useEffect(() => {\n    if (person) {\n      setFormData({ ...person });\n    } else {\n      // Reset for new entry\n      setFormData({\n        id: crypto.randomUUID(),\n        gender: Gender.Male,\n        firstName: '',\n        lastName: '',\n        spouseIds: [],\n        childrenIds: [],\n        bio: '',\n        birthPlace: '',\n        deathPlace: '',\n        photo: '',\n      });\n    }\n  }, [person]);\n\n  const handleChange = (field: keyof Person, value: any) => {\n    setFormData(prev => ({ ...prev, [field]: value }));\n  };\n\n  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {\n    const file = event.target.files?.[0];\n    if (file) {\n      // Check file size (limit to ~2MB for browser storage performance)\n      if (file.size > 2 * 1024 * 1024) {\n        alert(\"Image is too large. Please choose an image under 2MB.\");\n        return;\n      }\n\n      const reader = new FileReader();\n      reader.onloadend = () => {\n        handleChange('photo', reader.result as string);\n      };\n      reader.readAsDataURL(file);\n    }\n  };\n\n  const handleGenerateBio = async () => {\n    if (!formData.firstName || !formData.lastName) return;\n    setGeneratingBio(true);\n    try {\n      const bio = await generateBio(formData as Person);\n      handleChange('bio', bio);\n    } finally {\n      setGeneratingBio(false);\n    }\n  };\n\n  const addSpouse = (spouseId: string) => {\n    if (!spouseId) return;\n    const currentSpouses = formData.spouseIds || [];\n    if (!currentSpouses.includes(spouseId)) {\n        handleChange('spouseIds', [...currentSpouses, spouseId]);\n    }\n  };\n\n  const removeSpouse = (spouseId: string) => {\n    const currentSpouses = formData.spouseIds || [];\n    handleChange('spouseIds', currentSpouses.filter(id => id !== spouseId));\n  };\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    if (formData.firstName && formData.lastName) {\n        // Ensure arrays are initialized\n        const cleanData = {\n            ...formData,\n            spouseIds: formData.spouseIds || [],\n            childrenIds: formData.childrenIds || [],\n        }\n        onSave(cleanData as Person);\n    }\n  };\n\n  // Filter potential spouses (exclude self and already selected)\n  const availableSpouses = allPeople.filter(p => \n      p.id !== formData.id && \n      !formData.spouseIds?.includes(p.id)\n  );\n\n  return (\n    <div className=\"h-full bg-slate-800 border-l border-slate-700 p-6 overflow-y-auto no-scrollbar\">\n      <div className=\"flex justify-between items-center mb-6\">\n        <h2 className=\"text-xl font-bold text-white\">\n          {person ? 'Edit Person' : 'Add Person'}\n        </h2>\n        <button onClick={onCancel} className=\"text-slate-400 hover:text-white\">\n          <X size={24} />\n        </button>\n      </div>\n\n      <form onSubmit={handleSubmit} className=\"space-y-6\">\n        \n        {/* Photo Upload Section */}\n        <div className=\"flex flex-col items-center gap-3\">\n          <div \n            className=\"relative group w-28 h-28 rounded-full bg-slate-900 border-2 border-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:border-brand-500 transition-colors\"\n            onClick={() => fileInputRef.current?.click()}\n          >\n            {formData.photo ? (\n              <img src={formData.photo} alt=\"Profile\" className=\"w-full h-full object-cover\" />\n            ) : (\n              <Camera size={32} className=\"text-slate-500 group-hover:text-brand-400 transition-colors\" />\n            )}\n            \n            {/* Overlay on hover */}\n            <div className=\"absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity\">\n              <Upload size={20} className=\"text-white\" />\n            </div>\n          </div>\n          \n          <input \n            type=\"file\" \n            ref={fileInputRef} \n            className=\"hidden\" \n            accept=\"image/*\" \n            onChange={handleFileChange} \n          />\n          \n          <div className=\"flex gap-2\">\n             <button \n                type=\"button\"\n                onClick={() => fileInputRef.current?.click()}\n                className=\"text-xs text-brand-400 hover:text-brand-300 font-medium\"\n             >\n               {formData.photo ? 'Change Photo' : 'Upload Photo'}\n             </button>\n             {formData.photo && (\n               <>\n                 <span className=\"text-slate-600\">|</span>\n                 <button \n                    type=\"button\"\n                    onClick={() => handleChange('photo', '')}\n                    className=\"text-xs text-red-400 hover:text-red-300 font-medium\"\n                 >\n                   Remove\n                 </button>\n               </>\n             )}\n          </div>\n        </div>\n\n        {/* Basic Info */}\n        <div className=\"grid grid-cols-2 gap-4\">\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">First Name</label>\n            <input\n              type=\"text\"\n              required\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.firstName || ''}\n              onChange={e => handleChange('firstName', e.target.value)}\n            />\n          </div>\n          <div>\n            <label className=\"block text-xs font-medium text-slate-400 mb-1\">Last Name</label>\n            <input\n              type=\"text\"\n              required\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.lastName || ''}\n              onChange={e => handleChange('lastName', e.target.value)}\n            />\n          </div>\n        </div>\n\n        <div>\n           <label className=\"block text-xs font-medium text-slate-400 mb-1\">Gender</label>\n           <select \n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n              value={formData.gender}\n              onChange={e => handleChange('gender', e.target.value)}\n           >\n              <option value={Gender.Male}>Male</option>\n              <option value={Gender.Female}>Female</option>\n              <option value={Gender.Other}>Other</option>\n           </select>\n        </div>\n\n        {/* Birth Info */}\n        <div className=\"p-3 bg-slate-900/50 rounded-lg border border-slate-700 space-y-3\">\n          <h3 className=\"text-sm font-semibold text-slate-300\">Birth Details</h3>\n          <div className=\"grid grid-cols-2 gap-3\">\n            <div>\n              <label className=\"block text-xs font-medium text-slate-400 mb-1\">Date</label>\n              <input\n                type=\"date\"\n                className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n                value={formData.birthDate || ''}\n                onChange={e => handleChange('birthDate', e.target.value)}\n              />\n            </div>\n            <div>\n              <label className=\"block text-xs font-medium text-slate-400 mb-1\">Place</label>\n              <input\n                type=\"text\"\n                placeholder=\"City, Country\"\n                className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n                value={formData.birthPlace || ''}\n                onChange={e => handleChange('birthPlace', e.target.value)}\n              />\n            </div>\n          </div>\n        </div>\n\n        {/* Death Info */}\n        <div className=\"p-3 bg-slate-900/50 rounded-lg border border-slate-700 space-y-3\">\n          <h3 className=\"text-sm font-semibold text-slate-300\">Death Details (Optional)</h3>\n          <div className=\"grid grid-cols-2 gap-3\">\n            <div>\n              <label className=\"block text-xs font-medium text-slate-400 mb-1\">Date</label>\n              <input\n                type=\"date\"\n                className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n                value={formData.deathDate || ''}\n                onChange={e => handleChange('deathDate', e.target.value)}\n              />\n            </div>\n            <div>\n              <label className=\"block text-xs font-medium text-slate-400 mb-1\">Place</label>\n              <input\n                type=\"text\"\n                placeholder=\"City, Country\"\n                className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none\"\n                value={formData.deathPlace || ''}\n                onChange={e => handleChange('deathPlace', e.target.value)}\n              />\n            </div>\n          </div>\n        </div>\n\n        {/* Relationships */}\n        <div className=\"space-y-3\">\n            <label className=\"block text-xs font-medium text-slate-400\">Spouses / Partners</label>\n            <div className=\"flex gap-2\">\n               <select \n                  className=\"flex-1 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white outline-none text-sm\"\n                  onChange={(e) => {\n                      addSpouse(e.target.value);\n                      e.target.value = \"\";\n                  }}\n               >\n                  <option value=\"\">+ Add Spouse...</option>\n                  {availableSpouses.map(p => (\n                      <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>\n                  ))}\n               </select>\n            </div>\n            <div className=\"flex flex-wrap gap-2\">\n                {formData.spouseIds?.map(sid => {\n                    const spouse = allPeople.find(p => p.id === sid);\n                    if (!spouse) return null;\n                    return (\n                        <div key={sid} className=\"bg-slate-700 text-slate-200 px-2 py-1 rounded text-sm flex items-center gap-2\">\n                            <Heart size={12} className=\"text-pink-400\" />\n                            {spouse.firstName} {spouse.lastName}\n                            <button type=\"button\" onClick={() => removeSpouse(sid)} className=\"hover:text-white\"><X size={14}/></button>\n                        </div>\n                    )\n                })}\n            </div>\n        </div>\n\n        {/* Biography */}\n        <div>\n           <div className=\"flex justify-between items-end mb-1\">\n              <label className=\"block text-xs font-medium text-slate-400\">Biography</label>\n              <button\n                type=\"button\"\n                onClick={handleGenerateBio}\n                disabled={generatingBio || !formData.firstName}\n                className=\"text-xs flex items-center gap-1 text-brand-400 hover:text-brand-300 disabled:opacity-50\"\n              >\n                {generatingBio ? <Loader2 size={12} className=\"animate-spin\" /> : <Wand2 size={12} />}\n                Generate with AI\n              </button>\n           </div>\n           <textarea\n              className=\"w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-brand-500 outline-none h-32 text-sm leading-relaxed\"\n              value={formData.bio || ''}\n              onChange={e => handleChange('bio', e.target.value)}\n              placeholder=\"Write a short biography...\"\n           />\n        </div>\n\n        {/* Actions */}\n        <div className=\"pt-4 flex items-center gap-3 border-t border-slate-700\">\n          <button\n            type=\"submit\"\n            className=\"flex-1 bg-brand-600 hover:bg-brand-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2\"\n          >\n            <Save size={18} />\n            Save Record\n          </button>\n        </div>\n      </form>\n    </div>\n  );\n};"
+            }
+          ]
+        },
+        {
+          "path": "components/TreeVisualizer.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Update node rendering to include photo",
+          "diffs": [
+            {
+              "target": "",
+              "replacement": "import React, { useMemo } from 'react';\nimport * as d3 from 'd3';\nimport { TreeData, Person } from '../types';\n\ninterface TreeVisualizerProps {\n  data: TreeData;\n  onSelectPerson: (id: string) => void;\n}\n\n// Helper to convert flat relational data to D3 hierarchy\nconst buildHierarchy = (data: TreeData): d3.HierarchyNode<any> | null => {\n  const { people, rootId } = data;\n  const rootPerson = people[rootId];\n  \n  if (!rootPerson) return null;\n\n  const buildNode = (personId: string): any => {\n    const person = people[personId];\n    if (!person) return null;\n\n    const node: any = {\n      name: `${person.firstName} ${person.lastName}`,\n      attributes: {\n        id: person.id,\n        gender: person.gender,\n        birthDate: person.birthDate,\n        birthPlace: person.birthPlace,\n        deathDate: person.deathDate,\n        deathPlace: person.deathPlace,\n        photo: person.photo,\n      },\n      children: [],\n    };\n\n    // Recursively find children\n    if (person.childrenIds && person.childrenIds.length > 0) {\n      person.childrenIds.forEach(childId => {\n        const childNode = buildNode(childId);\n        if (childNode) {\n          node.children.push(childNode);\n        }\n      });\n    }\n    \n    return node;\n  };\n\n  const hierarchyData = buildNode(rootId);\n  return d3.hierarchy(hierarchyData);\n};\n\nexport const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPerson }) => {\n  const containerRef = React.useRef<HTMLDivElement>(null);\n  const [dimensions, setDimensions] = React.useState({ width: 800, height: 600 });\n\n  React.useEffect(() => {\n    if (containerRef.current) {\n      setDimensions({\n        width: containerRef.current.clientWidth,\n        height: containerRef.current.clientHeight\n      });\n    }\n    \n    const handleResize = () => {\n       if (containerRef.current) {\n        setDimensions({\n          width: containerRef.current.clientWidth,\n          height: containerRef.current.clientHeight\n        });\n      }\n    };\n    window.addEventListener('resize', handleResize);\n    return () => window.removeEventListener('resize', handleResize);\n  }, []);\n\n  const { nodes, links } = useMemo(() => {\n    const root = buildHierarchy(data);\n    if (!root) return { nodes: [], links: [] };\n\n    // Create a tree layout\n    const treeLayout = d3.tree().size([dimensions.width - 100, dimensions.height - 100]);\n    treeLayout(root);\n\n    return {\n      nodes: root.descendants(),\n      links: root.links(),\n    };\n  }, [data, dimensions]);\n\n  return (\n    <div ref={containerRef} className=\"w-full h-full bg-slate-900 overflow-hidden relative border border-slate-700 rounded-xl shadow-2xl\">\n      <div className=\"absolute top-4 right-4 bg-slate-800/80 backdrop-blur p-2 rounded text-xs text-slate-400\">\n        Start: {data.people[data.rootId]?.firstName} {data.people[data.rootId]?.lastName}\n      </div>\n      \n      <svg width={dimensions.width} height={dimensions.height} className=\"cursor-move\">\n        <defs>\n            {/* Standard clip path for images if needed */}\n            <clipPath id=\"circle-clip\">\n                <circle cx=\"0\" cy=\"0\" r=\"20\" />\n            </clipPath>\n        </defs>\n        <g transform={`translate(50, 50)`}>\n          {/* Links */}\n          {links.map((link, i) => {\n             // Generate a smooth cubic bezier curve\n             const d = d3.linkVertical()\n                .x((d: any) => d.x)\n                .y((d: any) => d.y)\n                (link as any);\n             \n             const parentName = (link.source.data as any).name;\n             const childName = (link.target.data as any).name;\n\n             return (\n               <g key={`link-${i}`}>\n                   <path\n                     d={d || \"\"}\n                     fill=\"none\"\n                     stroke=\"#475569\"\n                     strokeWidth=\"2\"\n                     className=\"transition-all duration-500\"\n                   />\n                   <title>Parent: {parentName} → Child: {childName}</title>\n               </g>\n             );\n          })}\n\n          {/* Nodes */}\n          {nodes.map((node: any, i) => {\n             const isMale = node.data.attributes.gender === 'Male';\n             const { birthDate, birthPlace, deathDate, deathPlace, photo, id } = node.data.attributes;\n             \n             let tooltipText = node.data.name;\n             if (birthDate || birthPlace) tooltipText += `\\nBorn: ${birthDate || '?'} ${birthPlace ? `in ${birthPlace}` : ''}`;\n             if (deathDate || deathPlace) tooltipText += `\\nDied: ${deathDate || '?'} ${deathPlace ? `in ${deathPlace}` : ''}`;\n\n             return (\n               <g \n                 key={i} \n                 transform={`translate(${node.x},${node.y})`}\n                 className=\"group cursor-pointer\"\n                 onClick={() => onSelectPerson(id)}\n               >\n                 <title>{tooltipText}</title>\n                 \n                 {/* Outer Border / Gender Indicator */}\n                 <circle\n                   r=\"24\"\n                   fill={isMale ? '#0ea5e9' : '#ec4899'}\n                   className=\"transition-all duration-300 shadow-lg\"\n                 />\n\n                 {/* Photo or Default Circle */}\n                 {photo ? (\n                    <g>\n                        <defs>\n                            <clipPath id={`clip-${id}`}>\n                                <circle r=\"20\" />\n                            </clipPath>\n                        </defs>\n                        <image\n                            href={photo}\n                            x=\"-20\"\n                            y=\"-20\"\n                            width=\"40\"\n                            height=\"40\"\n                            clipPath={`url(#clip-${id})`}\n                            preserveAspectRatio=\"xMidYMid slice\"\n                            className=\"pointer-events-none\"\n                        />\n                        {/* Inner stroke for cleaner edge */}\n                        <circle r=\"20\" fill=\"none\" stroke=\"rgba(0,0,0,0.1)\" strokeWidth=\"1\" />\n                    </g>\n                 ) : (\n                    <circle\n                        r=\"20\"\n                        className=\"fill-slate-900 stroke-slate-800\"\n                    />\n                 )}\n                 \n                 <text\n                   dy=\"40\"\n                   textAnchor=\"middle\"\n                   className=\"fill-slate-300 text-xs font-medium bg-slate-900 pointer-events-none\"\n                   style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}\n                 >\n                   {node.data.name}\n                 </text>\n                 <text\n                   dy=\"54\"\n                   textAnchor=\"middle\"\n                   className=\"fill-slate-500 text-[10px] pointer-events-none\"\n                 >\n                   {birthDate?.split('-')[0] || '?'}\n                 </text>\n               </g>\n             );\n          })}\n        </g>\n      </svg>\n    </div>\n  );\n};"
+            }
+          ]
+        }
+      ]
+    },
+    "createdTimestamp": 1765409866045,
+    "doneTimestamp": 1765409890508
+  }
+]
