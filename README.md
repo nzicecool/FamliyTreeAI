@@ -12,11 +12,14 @@ Because it’s open-source, the power is entirely yours. You can host it yoursel
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:**  
+1. Node.js
+2. Firebase if like to host and invite family members (perhaps later I will add other methods)
 
 
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+3. Update Firebase config file with real values
+4. Run the app:
    `npm run dev`
