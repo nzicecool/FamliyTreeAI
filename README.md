@@ -20,6 +20,9 @@ Because it’s open-source, the power is entirely yours. You can host it yoursel
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Update Firebase config file with real values
-4. Run the app:
+3. Update firebase-applet-config.json with your firebase config values
+4. In your Firebase project, create a Firestore database if you have not already
+5. In Firebase Console, update your Firestore security rules using [firestore.rules](./firestore.rules) from this repo
+6. Update Firebase config file with real values
+7. Run the app:
    `npm run dev`
