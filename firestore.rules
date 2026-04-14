@@ -1,136 +1,65 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: userId
-    // Fields:
-    //   - id: string (required) - User ID
-    //   - name: string (required) - User display name
-    //   - email: string (required) - User email
-    //   - photoUrl: string (required) - User photo URL
-    //   - role: string (required, enum: ['user', 'admin']) - User role
-    //
-    // Collection: users/{userId}/people
-    // Document ID: personId
-    // Fields:
-    //   - id: string (required)
-    //   - firstName: string (required)
-    //   - lastName: string (required)
-    //   - gender: string (required, enum: ['Male', 'Female', 'Other'])
-    //   - birthDate: string (optional)
-    //   - birthPlace: string (optional)
-    //   - deathDate: string (optional)
-    //   - deathPlace: string (optional)
-    //   - bio: string (optional)
-    //   - photo: string (optional)
-    //   - fatherId: string (optional)
-    //   - motherId: string (optional)
-    //   - spouseIds: list (required)
-    //   - childrenIds: list (required)
-    //
-    // Collection: users/{userId}/meta
-    // Document ID: tree
-    // Fields:
-    //   - rootId: string (required)
-    //
-    // ===============================================================
-
+    
     // ===============================================================
     // Helper Functions
     // ===============================================================
-
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "kanchanaw@senathltd.com" && request.auth.token.email_verified == true));
-    }
-
-    function isValidEmail(email) {
-      return email is string &&
-        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    function isValidUrl(url) {
-      return url is string &&
-        (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^data:image/.*"));
-    }
-
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == "myozscoop@gmail.com";
     }
 
     // ===============================================================
-    // Domain Validators
+    // Collection: invites
     // ===============================================================
-
-    function isValidUser(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'email', 'photoUrl', 'role']) &&
-             data.id is string && data.id.size() > 0 &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.email is string && isValidEmail(data.email) &&
-             data.photoUrl is string && isValidUrl(data.photoUrl) &&
-             data.role in ['user', 'admin'];
-    }
-
-    function isValidPerson(data) {
-      return hasOnlyAllowedFields(['id', 'firstName', 'lastName', 'gender', 'birthDate', 'birthPlace', 'deathDate', 'deathPlace', 'bio', 'photo', 'fatherId', 'motherId', 'spouseIds', 'childrenIds']) &&
-             data.id is string && data.id.size() > 0 &&
-             data.firstName is string && data.firstName.size() > 0 && data.firstName.size() < 100 &&
-             data.lastName is string && data.lastName.size() > 0 && data.lastName.size() < 100 &&
-             data.gender in ['Male', 'Female', 'Other'] &&
-             (!('birthDate' in data) || data.birthDate is string) &&
-             (!('birthPlace' in data) || data.birthPlace is string && data.birthPlace.size() < 200) &&
-             (!('deathDate' in data) || data.deathDate is string) &&
-             (!('deathPlace' in data) || data.deathPlace is string && data.deathPlace.size() < 200) &&
-             (!('bio' in data) || data.bio is string && data.bio.size() < 5000) &&
-             (!('photo' in data) || data.photo is string && data.photo.size() < 2000000) && // Max 2MB for base64
-             (!('fatherId' in data) || data.fatherId == null || data.fatherId is string) &&
-             (!('motherId' in data) || data.motherId == null || data.motherId is string) &&
-             data.spouseIds is list &&
-             data.childrenIds is list;
-    }
-
-    function isValidTreeMeta(data) {
-      return hasOnlyAllowedFields(['rootId']) &&
-             data.rootId is string && data.rootId.size() > 0;
+    match /invites/{email} {
+      // Only superadmin can create/update/delete invites
+      allow write: if isSuperAdmin();
+      // Anyone can check if an invite exists (needed for login check)
+      // but we should ideally restrict this to the owner of the email if possible.
+      // For the OTP flow, the server (Admin SDK) handles the check, 
+      // so we can keep this restricted.
+      allow read: if isSuperAdmin();
     }
 
     // ===============================================================
-    // Rules
+    // Collection: users
     // ===============================================================
-
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) && request.resource.data.role == 'user' || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+      // Users can only read and write their own data
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
 
       match /people/{personId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create, update: if isOwner(userId) && isValidPerson(request.resource.data);
-        allow delete: if isOwner(userId);
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
 
-      match /meta/tree {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create, update: if isOwner(userId) && isValidTreeMeta(request.resource.data);
+      match /meta/{metaId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
+    }
+
+    // ===============================================================
+    // Collection: otps
+    // ===============================================================
+    match /otps/{email} {
+      // Server handles OTP creation and verification via Admin SDK.
+      // No client-side access needed.
+      allow read, write: if false;
+    }
+    
+    // ===============================================================
+    // Collection: test
+    // ===============================================================
+    match /test/connection {
+      allow read: if true;
     }
 
     // Default deny
-    match /{path=**} {
+    match /{document=**} {
       allow read, write: if false;
     }
   }

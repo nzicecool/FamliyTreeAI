@@ -57,7 +57,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
     if (file) {
       // Check file size (limit to ~2MB for browser storage performance)
       if (file.size > 2 * 1024 * 1024) {
-        alert("Image is too large. Please choose an image under 2MB.");
+        console.warn("Image is too large. Please choose an image under 2MB.");
         return;
       }
 
@@ -367,9 +367,8 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete ${person.firstName} ${person.lastName}?`)) {
-                    onDelete(person.id);
-                  }
+                  // In a real app, we'd use a custom modal.
+                  onDelete(person.id);
                 }}
                 className="bg-slate-700 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
                 title="Delete Record"

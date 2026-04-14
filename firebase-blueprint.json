@@ -1,21 +1,30 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "User profile information",
+    "Invite": {
+      "title": "Invite",
+      "description": "Represents an invitation to join the family tree.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "photoUrl": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "admin"] }
+        "email": { "type": "string", "format": "email" },
+        "invitedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "photoUrl", "role"]
+      "required": ["email", "invitedBy", "createdAt"]
+    },
+    "OTP": {
+      "title": "OTP",
+      "description": "Represents a one-time password for login.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "code": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "code", "createdAt"]
     },
     "Person": {
       "title": "Person",
-      "description": "A member of the family tree",
+      "description": "Represents a person in the family tree.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -36,8 +45,8 @@
       "required": ["id", "firstName", "lastName", "gender", "spouseIds", "childrenIds"]
     },
     "TreeMeta": {
-      "title": "Tree Metadata",
-      "description": "Metadata for the user's family tree",
+      "title": "TreeMeta",
+      "description": "Metadata for the family tree.",
       "type": "object",
       "properties": {
         "rootId": { "type": "string" }
@@ -46,13 +55,25 @@
     }
   },
   "firestore": {
+    "/invites/{email}": {
+      "schema": "Invite",
+      "description": "Collection of invites indexed by email."
+    },
+    "/otps/{email}": {
+      "schema": "OTP",
+      "description": "Collection of temporary OTPs indexed by email."
+    },
     "/users/{userId}/people/{personId}": {
       "schema": "Person",
-      "description": "Collection of people in the user's family tree"
+      "description": "People in a user's family tree."
     },
     "/users/{userId}/meta/tree": {
       "schema": "TreeMeta",
-      "description": "Tree metadata for the user"
+      "description": "Metadata for a user's family tree."
+    },
+    "/health_check/status": {
+      "schema": { "type": "object" },
+      "description": "Backend health check document."
     }
   }
 }

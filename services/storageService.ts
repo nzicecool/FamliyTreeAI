@@ -1,162 +1,112 @@
-import { db, auth } from '../firebase';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  deleteDoc, 
-  query, 
-  onSnapshot,
-  getDocFromServer
-} from 'firebase/firestore';
 import { Person, TreeData } from '../types';
 import { INITIAL_DATA } from '../constants';
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
-
 export const storageService = {
+  // Helper to get auth headers
+  async getHeaders(getToken: () => Promise<string | null>) {
+    const token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  },
+
   // Load all people to reconstruct the tree
-  async loadTree(): Promise<TreeData> {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated");
-
-    const path = `users/${userId}/people`;
+  async loadTree(getToken: () => Promise<string | null>): Promise<TreeData> {
     try {
-      const q = query(collection(db, path));
-      const querySnapshot = await getDocs(q);
-      const peopleMap: Record<string, Person> = {};
+      const headers = await this.getHeaders(getToken);
+      const response = await fetch('/api/tree/load', { headers });
       
-      querySnapshot.forEach((doc) => {
-        peopleMap[doc.id] = doc.data() as Person;
-      });
-
-      // If empty, seed with initial data
-      if (Object.keys(peopleMap).length === 0) {
-        return this.seedData(userId);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to load tree');
       }
 
-      // Load meta for rootId
-      const metaPath = `users/${userId}/meta/tree`;
-      const metaDoc = await getDoc(doc(db, metaPath));
-      const rootId = metaDoc.exists() ? metaDoc.data().rootId : Object.keys(peopleMap)[0];
+      const data = await response.json();
+      
+      // If empty, seed with initial data
+      if (Object.keys(data.people).length === 0) {
+        return this.seedData(getToken);
+      }
 
-      return {
-        rootId,
-        people: peopleMap
-      };
+      return data;
     } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, path);
-      return { rootId: '', people: {} }; // Unreachable due to throw
+      console.error('Load tree error:', error);
+      throw error;
     }
   },
 
   // Save or Update a single person
-  async savePerson(person: Person): Promise<void> {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated");
-
-    const path = `users/${userId}/people/${person.id}`;
+  async savePerson(person: Person, getToken: () => Promise<string | null>): Promise<void> {
     try {
-      await setDoc(doc(db, `users/${userId}/people`, person.id), person);
+      const headers = await this.getHeaders(getToken);
+      const response = await fetch('/api/tree/save-person', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ person })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save person');
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
+      console.error('Save person error:', error);
+      throw error;
     }
   },
 
   // Delete a person
-  async deletePerson(id: string): Promise<void> {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated");
-
-    const path = `users/${userId}/people/${id}`;
+  async deletePerson(id: string, getToken: () => Promise<string | null>): Promise<void> {
     try {
-      await deleteDoc(doc(db, `users/${userId}/people`, id));
+      const headers = await this.getHeaders(getToken);
+      const response = await fetch(`/api/tree/delete-person/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete person');
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      console.error('Delete person error:', error);
+      throw error;
     }
   },
 
   // Save tree metadata
-  async saveTreeMeta(rootId: string): Promise<void> {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated");
-
-    const path = `users/${userId}/meta/tree`;
+  async saveTreeMeta(rootId: string, getToken: () => Promise<string | null>): Promise<void> {
     try {
-      await setDoc(doc(db, path), { rootId });
+      const headers = await this.getHeaders(getToken);
+      const response = await fetch('/api/tree/save-meta', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ rootId })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save meta');
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
+      console.error('Save meta error:', error);
+      throw error;
     }
   },
 
   // Seed initial data if empty
-  async seedData(userId: string): Promise<TreeData> {
+  async seedData(getToken: () => Promise<string | null>): Promise<TreeData> {
     const people = Object.values(INITIAL_DATA.people);
     for (const person of people) {
-      await this.savePerson(person);
+      await this.savePerson(person, getToken);
     }
-    await this.saveTreeMeta(INITIAL_DATA.rootId);
+    await this.saveTreeMeta(INITIAL_DATA.rootId, getToken);
     return INITIAL_DATA;
   },
 
-  // Validate connection
+  // Validate connection (noop for now as we use API)
   async testConnection() {
-    try {
-      await getDocFromServer(doc(db, 'test', 'connection'));
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('the client is offline')) {
-        console.error("Please check your Firebase configuration.");
-      }
-    }
+    return true;
   }
 };

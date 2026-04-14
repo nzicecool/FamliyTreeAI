@@ -1,15 +1,16 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { NAV_ITEMS } from './constants';
-import { TreeData, Person, ViewMode, Gender } from './types';
+import { TreeData, Person, ViewMode, Gender, User } from './types';
 import { TreeVisualizer } from './components/TreeVisualizer';
 import { EditorPanel } from './components/EditorPanel';
 import { SmartAdd } from './components/SmartAdd';
 import { LoginScreen } from './components/LoginScreen';
-import { authService, User } from './services/authService';
+import { InviteManager } from './components/InviteManager';
 import { storageService } from './services/storageService';
 import { generateGedcom } from './services/gedcomService';
 import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
+import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 
 // Error Boundary Component
 class ErrorBoundary extends (React.Component as any) {
@@ -58,8 +59,11 @@ class ErrorBoundary extends (React.Component as any) {
 }
 
 function AppContent() {
+  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const { getToken } = useAuth();
+  const { signOut } = useClerk();
+  
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   
   // Tree State
   const [treeData, setTreeData] = useState<TreeData | null>(null);
@@ -67,26 +71,35 @@ function AppContent() {
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Initialize Auth
+  // Map Clerk User to App User
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange((currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    if (isLoaded && isSignedIn && clerkUser) {
+      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+      const SUPERADMIN_EMAIL = 'myozscoop@gmail.com';
+      const isSuperAdmin = email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+      
+      setUser({
+        id: clerkUser.id,
+        name: clerkUser.fullName || clerkUser.username || email.split('@')[0],
+        email: email,
+        photoUrl: clerkUser.imageUrl,
+        role: isSuperAdmin ? 'superadmin' : 'user'
+      });
+    } else if (isLoaded && !isSignedIn) {
+      setUser(null);
+    }
+  }, [isLoaded, isSignedIn, clerkUser]);
 
   // Initialize Data when User is present
   useEffect(() => {
     if (user) {
       loadData();
-      storageService.testConnection();
     }
   }, [user]);
 
   const loadData = async () => {
     try {
-      const data = await storageService.loadTree();
+      const data = await storageService.loadTree(getToken);
       setTreeData(data);
     } catch (e) {
       console.error("Failed to load tree data", e);
@@ -121,14 +134,14 @@ function AppContent() {
               const oldFather = { ...newData.people[oldFatherId] };
               oldFather.childrenIds = oldFather.childrenIds.filter(id => id !== updatedPerson.id);
               newData.people[oldFatherId] = oldFather;
-              storageService.savePerson(oldFather);
+              storageService.savePerson(oldFather, getToken);
           }
           if (newFatherId && newData.people[newFatherId]) {
               const newFather = { ...newData.people[newFatherId] };
               if (!newFather.childrenIds.includes(updatedPerson.id)) {
                   newFather.childrenIds = [...newFather.childrenIds, updatedPerson.id];
                   newData.people[newFatherId] = newFather;
-                  storageService.savePerson(newFather);
+                  storageService.savePerson(newFather, getToken);
               }
           }
       }
@@ -138,14 +151,14 @@ function AppContent() {
               const oldMother = { ...newData.people[oldMotherId] };
               oldMother.childrenIds = oldMother.childrenIds.filter(id => id !== updatedPerson.id);
               newData.people[oldMotherId] = oldMother;
-              storageService.savePerson(oldMother);
+              storageService.savePerson(oldMother, getToken);
           }
           if (newMotherId && newData.people[newMotherId]) {
               const newMother = { ...newData.people[newMotherId] };
               if (!newMother.childrenIds.includes(updatedPerson.id)) {
                   newMother.childrenIds = [...newMother.childrenIds, updatedPerson.id];
                   newData.people[newMotherId] = newMother;
-                  storageService.savePerson(newMother);
+                  storageService.savePerson(newMother, getToken);
               }
           }
       }
@@ -156,7 +169,7 @@ function AppContent() {
               const updatedEx = { ...exSpouse };
               updatedEx.spouseIds = updatedEx.spouseIds.filter(id => id !== updatedPerson.id);
               newData.people[exSpouseId] = updatedEx;
-              storageService.savePerson(updatedEx);
+              storageService.savePerson(updatedEx, getToken);
           }
       });
 
@@ -166,14 +179,14 @@ function AppContent() {
               const updatedNew = { ...newSpouse };
               updatedNew.spouseIds = [...updatedNew.spouseIds, updatedPerson.id];
               newData.people[newSpouseId] = updatedNew;
-              storageService.savePerson(updatedNew);
+              storageService.savePerson(updatedNew, getToken);
           }
       });
 
       return newData;
     });
 
-    await storageService.savePerson(updatedPerson);
+    await storageService.savePerson(updatedPerson, getToken);
     setSelectedPersonId(null);
     setActiveView('tree');
   };
@@ -194,7 +207,7 @@ function AppContent() {
               const updatedSpouse = { ...spouse };
               updatedSpouse.spouseIds = updatedSpouse.spouseIds.filter(pid => pid !== id);
               newData.people[sid] = updatedSpouse;
-              storageService.savePerson(updatedSpouse);
+              storageService.savePerson(updatedSpouse, getToken);
           }
       });
 
@@ -202,13 +215,13 @@ function AppContent() {
           const father = { ...newData.people[personToDelete.fatherId] };
           father.childrenIds = father.childrenIds.filter(cid => cid !== id);
           newData.people[personToDelete.fatherId] = father;
-          storageService.savePerson(father);
+          storageService.savePerson(father, getToken);
       }
       if (personToDelete.motherId && newData.people[personToDelete.motherId]) {
           const mother = { ...newData.people[personToDelete.motherId] };
           mother.childrenIds = mother.childrenIds.filter(cid => cid !== id);
           newData.people[personToDelete.motherId] = mother;
-          storageService.savePerson(mother);
+          storageService.savePerson(mother, getToken);
       }
 
       personToDelete.childrenIds.forEach(cid => {
@@ -218,7 +231,7 @@ function AppContent() {
               if (updatedChild.fatherId === id) updatedChild.fatherId = null;
               if (updatedChild.motherId === id) updatedChild.motherId = null;
               newData.people[cid] = updatedChild;
-              storageService.savePerson(updatedChild);
+              storageService.savePerson(updatedChild, getToken);
           }
       });
 
@@ -228,13 +241,13 @@ function AppContent() {
           const remainingIds = Object.keys(newData.people);
           const newRootId = remainingIds.length > 0 ? remainingIds[0] : '';
           newData.rootId = newRootId;
-          if (newRootId) storageService.saveTreeMeta(newRootId);
+          if (newRootId) storageService.saveTreeMeta(newRootId, getToken);
       }
 
       return newData;
     });
 
-    await storageService.deletePerson(id);
+    await storageService.deletePerson(id, getToken);
     setSelectedPersonId(null);
     setActiveView('tree');
   };
@@ -244,7 +257,7 @@ function AppContent() {
         if (!prev) return null;
         return { ...prev, rootId: id };
     });
-    await storageService.saveTreeMeta(id);
+    await storageService.saveTreeMeta(id, getToken);
     setActiveView('tree');
   };
 
@@ -273,13 +286,13 @@ function AppContent() {
         }
     });
 
-    await storageService.savePerson(newPerson);
+    await storageService.savePerson(newPerson, getToken);
     setSelectedPersonId(newPerson.id);
     setActiveView('editor');
   };
 
   const handleLogout = async () => {
-    await authService.logout();
+    await signOut();
     setUser(null);
     setTreeData(null);
   };
@@ -308,7 +321,7 @@ function AppContent() {
       URL.revokeObjectURL(url);
   };
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-slate-950 text-brand-500">
         <Loader2 size={48} className="animate-spin" />
@@ -316,7 +329,7 @@ function AppContent() {
     );
   }
 
-  if (!user) {
+  if (!isSignedIn || !user) {
     return <LoginScreen onLogin={() => {}} />;
   }
 
@@ -341,7 +354,7 @@ function AppContent() {
         </div>
 
         <nav className="flex-1 p-2 space-y-1">
-          {NAV_ITEMS.map(item => (
+          {NAV_ITEMS.filter(item => !item.adminOnly || user.role === 'admin' || user.role === 'superadmin').map(item => (
             <button
               key={item.id}
               onClick={() => setActiveView(item.id as ViewMode)}
@@ -405,7 +418,9 @@ function AppContent() {
                 <div className="flex items-center gap-3 pr-4 border-r border-slate-800">
                    <div className="text-right hidden sm:block">
                        <div className="text-sm font-medium text-white">{user.name}</div>
-                       <div className="text-xs text-slate-400">{user.role === 'admin' ? 'Admin' : 'Free Plan'}</div>
+                       <div className="text-xs text-slate-400">
+                         {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Family Member'}
+                       </div>
                    </div>
                    <img src={user.photoUrl} alt="User" className="w-8 h-8 rounded-full border border-slate-600" />
                 </div>
@@ -441,6 +456,10 @@ function AppContent() {
                  <div className="max-w-2xl mx-auto mt-10">
                     <SmartAdd onParsed={handleSmartAdd} />
                  </div>
+             )}
+
+             {activeView === 'invites' && (
+                 <InviteManager currentUser={user} />
              )}
         </div>
       </main>
