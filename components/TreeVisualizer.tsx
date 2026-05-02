@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import * as d3 from 'd3';
 import { TreeData, Person } from '../types';
-import { ArrowUp, Home, ChevronRight, UserPlus, Users } from 'lucide-react';
+import { ArrowUp, Home, ChevronRight, UserPlus, Users, ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
 
 interface TreeVisualizerProps {
   data: TreeData;
@@ -58,21 +58,88 @@ const buildHierarchy = (data: TreeData): d3.HierarchyNode<any> | null => {
   return hierarchyData ? d3.hierarchy(hierarchyData) : null;
 };
 
-const PersonNode: React.FC<{
+interface PersonNodeProps {
   x: number;
   y: number;
   name: string;
   attrs: NodeAttrs;
-  onClick: () => void;
-}> = ({ x, y, name, attrs, onClick }) => {
+  onSelect: () => void;
+  onDrag: (newX: number, newY: number) => void;
+  getZoomScale: () => number;
+}
+
+const DRAG_THRESHOLD = 4;
+
+const PersonNode: React.FC<PersonNodeProps> = ({ x, y, name, attrs, onSelect, onDrag, getZoomScale }) => {
   const isMale = attrs.gender === 'Male';
   const { birthDate, birthPlace, deathDate, deathPlace, photo, id } = attrs;
+  const dragStateRef = React.useRef<{
+    startScreenX: number;
+    startScreenY: number;
+    origX: number;
+    origY: number;
+    scale: number;
+    moved: boolean;
+    pointerId: number;
+  } | null>(null);
+
   let tooltip = name;
   if (birthDate || birthPlace) tooltip += `\nBorn: ${birthDate || '?'} ${birthPlace ? `in ${birthPlace}` : ''}`;
   if (deathDate || deathPlace) tooltip += `\nDied: ${deathDate || '?'} ${deathPlace ? `in ${deathPlace}` : ''}`;
 
+  const onPointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    // Stop d3-zoom from picking this up as a pan.
+    e.stopPropagation();
+    const target = e.currentTarget;
+    target.setPointerCapture(e.pointerId);
+    dragStateRef.current = {
+      startScreenX: e.clientX,
+      startScreenY: e.clientY,
+      origX: x,
+      origY: y,
+      scale: getZoomScale() || 1,
+      moved: false,
+      pointerId: e.pointerId,
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    const s = dragStateRef.current;
+    if (!s || s.pointerId !== e.pointerId) return;
+    const dxScreen = e.clientX - s.startScreenX;
+    const dyScreen = e.clientY - s.startScreenY;
+    if (!s.moved && Math.hypot(dxScreen, dyScreen) < DRAG_THRESHOLD) return;
+    s.moved = true;
+    onDrag(s.origX + dxScreen / s.scale, s.origY + dyScreen / s.scale);
+  };
+
+  const releaseCapture = (e: React.PointerEvent<SVGGElement>) => {
+    const target = e.currentTarget;
+    if (target.hasPointerCapture(e.pointerId)) target.releasePointerCapture(e.pointerId);
+  };
+
+  const onPointerUp = (e: React.PointerEvent<SVGGElement>) => {
+    const s = dragStateRef.current;
+    releaseCapture(e);
+    dragStateRef.current = null;
+    if (s && !s.moved) onSelect();
+  };
+
+  const onPointerCancel = (e: React.PointerEvent<SVGGElement>) => {
+    releaseCapture(e);
+    dragStateRef.current = null;
+  };
+
   return (
-    <g transform={`translate(${x},${y})`} className="group cursor-pointer" onClick={onClick}>
+    <g
+      data-node="person"
+      transform={`translate(${x},${y})`}
+      className="cursor-grab active:cursor-grabbing"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+    >
       <title>{tooltip}</title>
       <circle r="24" fill={isMale ? '#0ea5e9' : '#ec4899'} className="transition-all duration-300 shadow-lg" />
       {photo ? (
@@ -95,7 +162,7 @@ const PersonNode: React.FC<{
           <circle r="20" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
         </g>
       ) : (
-        <circle r="20" className="fill-slate-900 stroke-slate-800" />
+        <circle r="20" className="fill-slate-900 stroke-slate-800 pointer-events-none" />
       )}
       <text
         dy="40"
@@ -114,7 +181,17 @@ const PersonNode: React.FC<{
 
 export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPerson, onSetRoot }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const zoomBehaviorRef = React.useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const zoomScaleRef = React.useRef(1);
   const [dimensions, setDimensions] = React.useState({ width: 800, height: 600 });
+  const [viewTransform, setViewTransform] = React.useState<string>('translate(50,50) scale(1)');
+  const [nodeOverrides, setNodeOverrides] = React.useState<Record<string, { x: number; y: number }>>({});
+
+  // Reset per-node positions when the tree's root changes.
+  React.useEffect(() => {
+    setNodeOverrides({});
+  }, [data.rootId]);
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -125,6 +202,52 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Wire d3-zoom for pan + zoom on the SVG.
+  React.useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const selection = d3.select<SVGSVGElement, unknown>(svg);
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.25, 4])
+      .filter((event: any) => {
+        // Mirror d3-zoom's default guards (no ctrl unless wheel, primary button only).
+        if (event.ctrlKey && event.type !== 'wheel') return false;
+        if (event.button !== undefined && event.button !== 0) return false;
+        const target = event.target as Element | null;
+        // If the user pressed on a node, don't start a pan – let the node handler take over.
+        if (target && target.closest('[data-node="person"]')) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        const t = event.transform;
+        zoomScaleRef.current = t.k;
+        setViewTransform(`translate(${t.x},${t.y}) scale(${t.k})`);
+      });
+    zoomBehaviorRef.current = zoom;
+    selection.call(zoom);
+    selection.call(zoom.transform, d3.zoomIdentity.translate(50, 50).scale(1));
+    return () => {
+      selection.on('.zoom', null);
+      zoomBehaviorRef.current = null;
+    };
+  }, []);
+
+  const zoomBy = (factor: number) => {
+    const svg = svgRef.current;
+    const zoom = zoomBehaviorRef.current;
+    if (!svg || !zoom) return;
+    d3.select(svg).transition().duration(200).call(zoom.scaleBy, factor);
+  };
+
+  const resetView = () => {
+    const svg = svgRef.current;
+    const zoom = zoomBehaviorRef.current;
+    if (!svg || !zoom) return;
+    d3.select(svg).transition().duration(250).call(zoom.transform, d3.zoomIdentity.translate(50, 50).scale(1));
+  };
+
+  const resetLayout = () => setNodeOverrides({});
 
   const rootPerson = data.people[data.rootId];
 
@@ -142,13 +265,13 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
     return set;
   }, [data, rootPerson]);
 
-  // Layout descendants with d3.tree, then weave in spouse connections.
-  const { nodes, parentLinks, spouseLinks, attachedSpouseNodes, reachable } = useMemo(() => {
+  // Layout descendants with d3.tree, classify spouses, and produce base positions.
+  const layout = useMemo(() => {
     const empty = {
-      nodes: [] as d3.HierarchyPointNode<any>[],
-      parentLinks: [] as Array<d3.HierarchyPointLink<any>>,
-      spouseLinks: [] as Array<{ x1: number; y1: number; x2: number; y2: number }>,
-      attachedSpouseNodes: [] as Array<{ id: string; x: number; y: number; name: string; attrs: NodeAttrs }>,
+      treeNodes: [] as Array<{ id: string; baseX: number; baseY: number; name: string; attrs: NodeAttrs }>,
+      parentEdges: [] as Array<{ sourceId: string; targetId: string; sourceName: string; targetName: string }>,
+      spousePairs: [] as Array<{ aId: string; bId: string }>,
+      attachedSpouses: [] as Array<{ id: string; baseX: number; baseY: number; name: string; attrs: NodeAttrs; partnerIds: string[] }>,
       reachable: new Set<string>(descendants),
     };
 
@@ -160,104 +283,140 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       Math.max(100, dimensions.height - 100),
     ]);
     const laidOut = treeLayout(root);
-    const nodes = laidOut.descendants();
-    const parentLinks = laidOut.links();
+    const d3Nodes = laidOut.descendants();
+    const d3Links = laidOut.links();
 
-    const laidOutById = new Map<string, d3.HierarchyPointNode<any>>();
-    nodes.forEach(n => laidOutById.set((n.data as any).attributes.id, n));
+    const treeNodes = d3Nodes.map(n => ({
+      id: (n.data as any).attributes.id as string,
+      baseX: n.x,
+      baseY: n.y,
+      name: (n.data as any).name as string,
+      attrs: (n.data as any).attributes as NodeAttrs,
+    }));
 
-    // Step 1: classify spouse relationships.
-    // - laidOutPairs: both spouses are in the tree (one entry per unordered pair).
-    // - attachedPartners: for each non-laid-out spouse, the list of laid-out partners.
-    const laidOutPairs = new Map<string, [string, string]>();
+    const parentEdges = d3Links.map(link => ({
+      sourceId: (link.source.data as any).attributes.id as string,
+      targetId: (link.target.data as any).attributes.id as string,
+      sourceName: (link.source.data as any).name as string,
+      targetName: (link.target.data as any).name as string,
+    }));
+
+    const laidOutById = new Map(treeNodes.map(n => [n.id, n]));
+
+    // Classify spouse relationships.
+    const laidOutPairs = new Map<string, { aId: string; bId: string }>();
     const attachedPartners = new Map<string, string[]>();
-
-    nodes.forEach(node => {
-      const partnerId = (node.data as any).attributes.id as string;
-      const person = data.people[partnerId];
+    treeNodes.forEach(node => {
+      const person = data.people[node.id];
       if (!person) return;
       for (const sid of person.spouseIds || []) {
         if (!data.people[sid]) continue;
         if (laidOutById.has(sid)) {
-          const key = [partnerId, sid].sort().join('|');
-          if (!laidOutPairs.has(key)) {
-            laidOutPairs.set(key, [partnerId, sid]);
-          }
+          const key = [node.id, sid].sort().join('|');
+          if (!laidOutPairs.has(key)) laidOutPairs.set(key, { aId: node.id, bId: sid });
         } else {
           const partners = attachedPartners.get(sid) || [];
-          if (!partners.includes(partnerId)) partners.push(partnerId);
+          if (!partners.includes(node.id)) partners.push(node.id);
           attachedPartners.set(sid, partners);
         }
       }
     });
 
-    // Bounds for clamping attached-spouse positions (viewport-safe).
+    // Place each attached spouse near their first partner; clamp to viewport.
     const innerWidth = Math.max(100, dimensions.width - 100);
     const minX = 24;
     const maxX = innerWidth - 24;
-
-    const spouseLinks: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-    const attachedSpouseNodes: Array<{ id: string; x: number; y: number; name: string; attrs: NodeAttrs }> = [];
-    const attachedCountByPartner = new Map<string, number>();
+    const usedSlotsByPartner = new Map<string, number>();
+    const attachedSpouses: Array<{ id: string; baseX: number; baseY: number; name: string; attrs: NodeAttrs; partnerIds: string[] }> = [];
     const reachable = new Set<string>(descendants);
 
-    // Step 2: laid-out spouse pair links.
-    laidOutPairs.forEach(([a, b]) => {
-      const na = laidOutById.get(a)!;
-      const nb = laidOutById.get(b)!;
-      spouseLinks.push({ x1: na.x, y1: na.y, x2: nb.x, y2: nb.y });
-    });
-
-    // Step 3: place each attached spouse near their first partner; link from every partner.
     attachedPartners.forEach((partnerIds, sid) => {
       const spouse = data.people[sid];
       if (!spouse) return;
-      const anchorId = partnerIds[0];
-      const anchor = laidOutById.get(anchorId);
+      const anchor = laidOutById.get(partnerIds[0]);
       if (!anchor) return;
-
-      const usedSlots = attachedCountByPartner.get(anchorId) || 0;
-      attachedCountByPartner.set(anchorId, usedSlots + 1);
-      // Alternate sides: 1st right, 2nd left, 3rd further right, etc.
-      const direction = usedSlots % 2 === 0 ? 1 : -1;
-      const distance = 70 + Math.floor(usedSlots / 2) * 70;
-      const rawX = anchor.x + direction * distance;
-      // Clamp into the SVG inner bounds so floating spouses never disappear off-edge.
+      const slot = usedSlotsByPartner.get(anchor.id) || 0;
+      usedSlotsByPartner.set(anchor.id, slot + 1);
+      const direction = slot % 2 === 0 ? 1 : -1;
+      const distance = 70 + Math.floor(slot / 2) * 70;
+      const rawX = anchor.baseX + direction * distance;
       const sx = Math.max(minX, Math.min(maxX, rawX));
-      const sy = anchor.y;
-
-      attachedSpouseNodes.push({
+      attachedSpouses.push({
         id: sid,
-        x: sx,
-        y: sy,
+        baseX: sx,
+        baseY: anchor.baseY,
         name: `${spouse.firstName} ${spouse.lastName}`,
         attrs: personToAttrs(spouse),
+        partnerIds,
       });
       reachable.add(sid);
-
-      // Draw a link from each laid-out partner that shares this spouse.
-      partnerIds.forEach(pid => {
-        const partnerNode = laidOutById.get(pid);
-        if (!partnerNode) return;
-        spouseLinks.push({ x1: partnerNode.x, y1: partnerNode.y, x2: sx, y2: sy });
-      });
     });
 
     return {
-      nodes,
-      parentLinks,
-      spouseLinks,
-      attachedSpouseNodes,
+      treeNodes,
+      parentEdges,
+      spousePairs: Array.from(laidOutPairs.values()),
+      attachedSpouses,
       reachable,
     };
   }, [data, dimensions, descendants]);
 
+  // Effective positions (base ⊕ user overrides), and link path computations.
+  const view = useMemo(() => {
+    const positions = new Map<string, { x: number; y: number }>();
+    layout.treeNodes.forEach(n => {
+      const o = nodeOverrides[n.id];
+      positions.set(n.id, o ? { x: o.x, y: o.y } : { x: n.baseX, y: n.baseY });
+    });
+    layout.attachedSpouses.forEach(sp => {
+      const o = nodeOverrides[sp.id];
+      positions.set(sp.id, o ? { x: o.x, y: o.y } : { x: sp.baseX, y: sp.baseY });
+    });
+
+    const linkGen = d3.linkVertical<any, { x: number; y: number }>()
+      .x(p => p.x)
+      .y(p => p.y);
+
+    const parentLinks = layout.parentEdges
+      .map(edge => {
+        const s = positions.get(edge.sourceId);
+        const t = positions.get(edge.targetId);
+        if (!s || !t) return null;
+        return {
+          d: linkGen({ source: s, target: t } as any) || '',
+          parentName: edge.sourceName,
+          childName: edge.targetName,
+          key: `p-${edge.sourceId}-${edge.targetId}`,
+        };
+      })
+      .filter(Boolean) as Array<{ d: string; parentName: string; childName: string; key: string }>;
+
+    const spouseLinks: Array<{ x1: number; y1: number; x2: number; y2: number; key: string }> = [];
+    layout.spousePairs.forEach(pair => {
+      const a = positions.get(pair.aId);
+      const b = positions.get(pair.bId);
+      if (!a || !b) return;
+      spouseLinks.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: `sp-${pair.aId}-${pair.bId}` });
+    });
+    layout.attachedSpouses.forEach(sp => {
+      const target = positions.get(sp.id);
+      if (!target) return;
+      sp.partnerIds.forEach(pid => {
+        const src = positions.get(pid);
+        if (!src) return;
+        spouseLinks.push({ x1: src.x, y1: src.y, x2: target.x, y2: target.y, key: `sp-${pid}-${sp.id}` });
+      });
+    });
+
+    return { positions, parentLinks, spouseLinks };
+  }, [layout, nodeOverrides]);
+
   // Disconnected = anyone neither laid out nor attached as a spouse.
   const disconnected: Person[] = useMemo(() => {
     return (Object.values(data.people) as Person[])
-      .filter(p => !reachable.has(p.id))
+      .filter(p => !layout.reachable.has(p.id))
       .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
-  }, [data, reachable]);
+  }, [data, layout.reachable]);
 
   const parentOfRoot = useMemo(() => {
     if (!rootPerson) return null;
@@ -284,6 +443,13 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
 
   const showAtTop = topAncestor && topAncestor.id !== data.rootId;
   const totalPeople = Object.keys(data.people).length;
+  const hasNodes = layout.treeNodes.length > 0;
+  const hasOverrides = Object.keys(nodeOverrides).length > 0;
+
+  const handleNodeDrag = (id: string, x: number, y: number) => {
+    setNodeOverrides(prev => ({ ...prev, [id]: { x, y } }));
+  };
+  const getZoomScale = () => zoomScaleRef.current;
 
   return (
     <div className="w-full h-full flex flex-col gap-3">
@@ -318,13 +484,60 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
           </div>
         </div>
         <div className="text-xs text-slate-500 shrink-0 hidden sm:block">
-          {reachable.size} of {totalPeople} shown
+          {layout.reachable.size} of {totalPeople} shown
         </div>
       </div>
 
       {/* Tree visualization */}
       <div ref={containerRef} className="flex-1 min-h-0 bg-slate-900 overflow-hidden relative border border-slate-700 rounded-xl shadow-2xl">
-        {nodes.length === 0 ? (
+        {hasNodes && (
+          <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1 shadow-lg">
+            <button
+              type="button"
+              onClick={() => zoomBy(1.25)}
+              className="p-1.5 text-slate-200 hover:bg-slate-700 rounded transition-colors"
+              title="Zoom in"
+              aria-label="Zoom in"
+            >
+              <ZoomIn size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => zoomBy(0.8)}
+              className="p-1.5 text-slate-200 hover:bg-slate-700 rounded transition-colors"
+              title="Zoom out"
+              aria-label="Zoom out"
+            >
+              <ZoomOut size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={resetView}
+              className="p-1.5 text-slate-200 hover:bg-slate-700 rounded transition-colors"
+              title="Reset zoom"
+              aria-label="Reset zoom"
+            >
+              <Maximize2 size={16} />
+            </button>
+            {hasOverrides && (
+              <button
+                type="button"
+                onClick={resetLayout}
+                className="p-1.5 text-slate-200 hover:bg-slate-700 rounded transition-colors border-t border-slate-700 mt-0.5 pt-1.5"
+                title="Reset node positions"
+                aria-label="Reset node positions"
+              >
+                <RotateCcw size={16} />
+              </button>
+            )}
+          </div>
+        )}
+        {hasNodes && (
+          <div className="absolute bottom-3 left-3 z-10 text-[11px] text-slate-500 bg-slate-800/70 backdrop-blur px-2 py-1 rounded">
+            Drag a node to move · Drag empty space to pan · Scroll to zoom
+          </div>
+        )}
+        {!hasNodes ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2">
             <Users size={40} className="opacity-30" />
             <p>No tree to display from the current root.</p>
@@ -333,68 +546,72 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
             )}
           </div>
         ) : (
-          <svg width={dimensions.width} height={dimensions.height} className="cursor-move">
-            <g transform={`translate(50, 50)`}>
+          <svg
+            ref={svgRef}
+            width={dimensions.width}
+            height={dimensions.height}
+            className="cursor-grab active:cursor-grabbing"
+            style={{ touchAction: 'none' }}
+          >
+            <g transform={viewTransform}>
               {/* Parent → child links */}
-              {parentLinks.map(link => {
-                const d = d3.linkVertical()
-                  .x((d: any) => d.x)
-                  .y((d: any) => d.y)(link as any);
-                const parentId = (link.source.data as any).attributes.id;
-                const childId = (link.target.data as any).attributes.id;
-                const parentName = (link.source.data as any).name;
-                const childName = (link.target.data as any).name;
-                return (
-                  <g key={`p-${parentId}-${childId}`}>
-                    <path d={d || ''} fill="none" stroke="#475569" strokeWidth="2" className="transition-all duration-500" />
-                    <title>Parent: {parentName} → Child: {childName}</title>
-                  </g>
-                );
-              })}
+              {view.parentLinks.map(link => (
+                <g key={link.key}>
+                  <path d={link.d} fill="none" stroke="#475569" strokeWidth="2" />
+                  <title>Parent: {link.parentName} → Child: {link.childName}</title>
+                </g>
+              ))}
 
               {/* Spouse links */}
-              {spouseLinks.map(s => {
-                const key = `s-${[Math.round(s.x1), Math.round(s.y1), Math.round(s.x2), Math.round(s.y2)].join('-')}`;
+              {view.spouseLinks.map(s => (
+                <g key={s.key}>
+                  <line
+                    x1={s.x1}
+                    y1={s.y1}
+                    x2={s.x2}
+                    y2={s.y2}
+                    stroke="#ec4899"
+                    strokeWidth="2"
+                    strokeDasharray="4 3"
+                    opacity={0.85}
+                  />
+                  <title>Spouses</title>
+                </g>
+              ))}
+
+              {/* Laid-out tree nodes */}
+              {layout.treeNodes.map(n => {
+                const pos = view.positions.get(n.id) || { x: n.baseX, y: n.baseY };
                 return (
-                  <g key={key}>
-                    <line
-                      x1={s.x1}
-                      y1={s.y1}
-                      x2={s.x2}
-                      y2={s.y2}
-                      stroke="#ec4899"
-                      strokeWidth="2"
-                      strokeDasharray="4 3"
-                      opacity={0.85}
-                    />
-                    <title>Spouses</title>
-                  </g>
+                  <PersonNode
+                    key={`n-${n.id}`}
+                    x={pos.x}
+                    y={pos.y}
+                    name={n.name}
+                    attrs={n.attrs}
+                    onSelect={() => onSelectPerson(n.id)}
+                    onDrag={(nx, ny) => handleNodeDrag(n.id, nx, ny)}
+                    getZoomScale={getZoomScale}
+                  />
                 );
               })}
 
-              {/* Laid-out tree nodes */}
-              {nodes.map((node: any) => (
-                <PersonNode
-                  key={`n-${node.data.attributes.id}`}
-                  x={node.x}
-                  y={node.y}
-                  name={node.data.name}
-                  attrs={node.data.attributes}
-                  onClick={() => onSelectPerson(node.data.attributes.id)}
-                />
-              ))}
-
               {/* Attached spouse nodes */}
-              {attachedSpouseNodes.map(sp => (
-                <PersonNode
-                  key={`a-${sp.id}`}
-                  x={sp.x}
-                  y={sp.y}
-                  name={sp.name}
-                  attrs={sp.attrs}
-                  onClick={() => onSelectPerson(sp.id)}
-                />
-              ))}
+              {layout.attachedSpouses.map(sp => {
+                const pos = view.positions.get(sp.id) || { x: sp.baseX, y: sp.baseY };
+                return (
+                  <PersonNode
+                    key={`a-${sp.id}`}
+                    x={pos.x}
+                    y={pos.y}
+                    name={sp.name}
+                    attrs={sp.attrs}
+                    onSelect={() => onSelectPerson(sp.id)}
+                    onDrag={(nx, ny) => handleNodeDrag(sp.id, nx, ny)}
+                    getZoomScale={getZoomScale}
+                  />
+                );
+              })}
             </g>
           </svg>
         )}
