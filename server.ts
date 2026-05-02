@@ -49,7 +49,7 @@ try {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 5000;
 
   app.use(cors());
   app.use(express.json());
@@ -210,7 +210,16 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+        hmr: {
+          clientPort: 443,
+        },
+        watch: {
+          ignored: ['**/.local/**', '**/dist/**', '**/.cache/**'],
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
