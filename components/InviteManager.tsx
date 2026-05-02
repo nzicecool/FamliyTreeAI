@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
-import { collection, doc, setDoc, getDocs, query, orderBy, deleteDoc } from 'firebase/firestore';
-import { User } from '../services/authService';
+import { useAuth } from '@clerk/clerk-react';
+import { User } from '../types';
 import { Mail, UserPlus, Trash2, Clock, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -17,22 +16,32 @@ interface InviteManagerProps {
 }
 
 export const InviteManager: React.FC<InviteManagerProps> = ({ currentUser }) => {
+  const { getToken } = useAuth();
   const [email, setEmail] = useState('');
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const authedFetch = async (input: RequestInfo, init: RequestInit = {}) => {
+    const token = await getToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init.headers || {}),
+    };
+    return fetch(input, { ...init, headers });
+  };
+
   const fetchInvites = async () => {
     setFetching(true);
     try {
-      const q = query(collection(db, 'invites'), orderBy('invitedAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const inviteList: Invite[] = [];
-      querySnapshot.forEach((doc) => {
-        inviteList.push(doc.data() as Invite);
-      });
-      setInvites(inviteList);
+      const response = await authedFetch('/api/invites');
+      if (!response.ok) {
+        throw new Error('Failed to load invitations');
+      }
+      const data = await response.json();
+      setInvites(data.invites || []);
     } catch (err) {
       console.error('Error fetching invites:', err);
       setError('Failed to load invitations.');
@@ -54,57 +63,42 @@ export const InviteManager: React.FC<InviteManagerProps> = ({ currentUser }) => 
 
     try {
       const inviteEmail = email.toLowerCase().trim();
-      const inviteDocRef = doc(db, 'invites', inviteEmail);
-      
-      const newInvite: Invite = {
-        email: inviteEmail,
-        invitedBy: currentUser.email,
-        invitedAt: new Date().toISOString(),
-        status: 'pending'
-      };
+      const response = await authedFetch('/api/invite', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: inviteEmail,
+          invitedBy: currentUser.name,
+        }),
+      });
 
-      // 1. Save to Firestore (authorized access check)
-      await setDoc(inviteDocRef, newInvite);
+      const data = await response.json().catch(() => ({}));
 
-      // 2. Call Backend API to send email via Agentmail.to
-      const idToken = await auth.currentUser?.getIdToken();
-      if (idToken) {
-        const response = await fetch('/api/invite', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: inviteEmail,
-            invitedBy: currentUser.name,
-            idToken
-          })
-        });
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send invitation');
+      }
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Email sending failed:', errorData);
-          // We still keep the invite in Firestore, but notify about the email failure
-          setError('Invite saved, but failed to send notification email.');
-        }
+      if (data.emailError) {
+        setError(`Invite saved, but email failed: ${data.emailError}`);
       }
 
       setEmail('');
       await fetchInvites();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sending invite:', err);
-      setError('Failed to send invitation.');
+      setError(err.message || 'Failed to send invitation.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteInvite = async (inviteEmail: string) => {
-    // In a real app, we'd use a custom modal. For now, we'll just delete directly
-    // or assume the user clicked a delete button that's clear enough.
-    // To be safe and follow instructions, we avoid window.confirm.
     try {
-      await deleteDoc(doc(db, 'invites', inviteEmail));
+      const response = await authedFetch(`/api/invite/${encodeURIComponent(inviteEmail)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to revoke invitation');
+      }
       await fetchInvites();
     } catch (err) {
       console.error('Error deleting invite:', err);
@@ -159,7 +153,7 @@ export const InviteManager: React.FC<InviteManagerProps> = ({ currentUser }) => 
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80">
           <h3 className="font-semibold text-white">Active Invitations</h3>
         </div>
-        
+
         <div className="divide-y divide-slate-800">
           {fetching ? (
             <div className="p-12 flex flex-col items-center justify-center text-slate-500">
@@ -188,7 +182,7 @@ export const InviteManager: React.FC<InviteManagerProps> = ({ currentUser }) => 
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <span className={clsx(
                     "text-xs px-2 py-1 rounded-full font-medium uppercase tracking-wider",
