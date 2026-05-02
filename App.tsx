@@ -436,7 +436,11 @@ function AppContent() {
 
         <div className="flex-1 overflow-hidden p-6 relative">
              {activeView === 'tree' && (
-                 <TreeVisualizer data={treeData} onSelectPerson={handleSelectPerson} />
+                 <TreeVisualizer
+                    data={treeData}
+                    onSelectPerson={handleSelectPerson}
+                    onSetRoot={handleSetRoot}
+                 />
              )}
 
              {activeView === 'editor' && (
