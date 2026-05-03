@@ -44,11 +44,28 @@ Tables in the development database (created on first setup):
 - `GET    /api/invites` — list invites
 - `POST   /api/invite` — create an invite + send email via Agentmail
 - `DELETE /api/invite/:email` — revoke an invite
+- `GET    /api/settings` — current user's AI provider preference and which BYO keys are configured (booleans only — keys are never returned)
+- `PUT    /api/settings` — set provider preference
+- `PUT    /api/settings/key` — save a BYO API key (openai/anthropic/glm/kimi)
+- `DELETE /api/settings/key/:provider` — clear a BYO key
+- `POST   /api/ai/bio` — generate a person bio
+- `POST   /api/ai/parse` — extract a structured Person from free text
+- `POST   /api/ai/narrative` — generate a focused family narrative
+
+## AI Providers (server-side only)
+
+All AI calls run server-side. Provider keys never reach the browser.
+- Default: Google Gemini (uses server `GEMINI_API_KEY` env var)
+- Bring-your-own: OpenAI (`gpt-4o-mini`), Anthropic (`claude-3-5-haiku-latest`), Zhipu GLM (`glm-4-flash`), Moonshot Kimi (`moonshot-v1-8k`)
+- Per-user provider preference + BYO keys live in the `user_settings` Postgres table.
+- If a user picks a BYO provider but hasn't supplied a key, the server transparently falls back to Gemini and the response includes `meta.fellBackToGemini: true` so the UI can warn.
+- Provider dispatch lives in `aiProviders.ts`.
 
 ## Project Layout
 
 - `index.html`, `index.tsx` — Vite entry. Sets up `<ClerkProvider>` and routes `/sso-callback` to Clerk's redirect handler.
-- `App.tsx` — Main UI shell, sidebar nav, error boundary, tree state.
-- `components/` — TreeVisualizer, EditorPanel, SmartAdd, LoginScreen, InviteManager.
-- `services/` — `storageService` (talks to the Express `/api/tree/*` endpoints), `geminiService`, `gedcomService`, `authService` (deprecated Clerk shim).
+- `App.tsx` — Main UI shell, sidebar nav (collapsible, persisted in localStorage `familytree:sidebar-open`), error boundary, tree state.
+- `components/` — TreeVisualizer, EditorPanel, SmartAdd, LoginScreen, InviteManager, NarrativeView, SettingsView.
+- `services/` — `storageService` (talks to `/api/tree/*`), `aiService` (talks to `/api/ai/*`), `settingsService` (talks to `/api/settings*`), `gedcomService`, `authService` (deprecated Clerk shim).
+- `aiProviders.ts` — server-side provider dispatcher (Gemini/OpenAI/Anthropic/GLM/Kimi).
 - `server.ts` — Express API (Postgres-backed) plus Vite middleware in dev / static `dist/` in production.

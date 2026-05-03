@@ -7,9 +7,10 @@ import { SmartAdd } from './components/SmartAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { InviteManager } from './components/InviteManager';
 import { NarrativeView } from './components/NarrativeView';
+import { SettingsView } from './components/SettingsView';
 import { storageService } from './services/storageService';
 import { generateGedcom } from './services/gedcomService';
-import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle } from 'lucide-react';
+import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 
@@ -70,7 +71,17 @@ function AppContent() {
   const [treeData, setTreeData] = useState<TreeData | null>(null);
   const [activeView, setActiveView] = useState<ViewMode>('tree');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('familytree:sidebar-open');
+    return stored === null ? true : stored === '1';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('familytree:sidebar-open', isSidebarOpen ? '1' : '0');
+    }
+  }, [isSidebarOpen]);
 
   // Map Clerk User to App User
   useEffect(() => {
@@ -346,13 +357,24 @@ function AppContent() {
   return (
     <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
       {/* Sidebar Navigation */}
-      <div className={clsx("flex flex-col border-r border-slate-800 bg-slate-900 transition-all duration-300", isSidebarOpen ? "w-64" : "w-16")}>
+      <div className={clsx("relative flex flex-col border-r border-slate-800 bg-slate-900 transition-all duration-300", isSidebarOpen ? "w-64" : "w-16")}>
         <div className="p-4 border-b border-slate-800 flex items-center gap-3">
           <div className="bg-brand-600 p-2 rounded-lg shrink-0">
             <Leaf size={24} className="text-white" />
           </div>
           {isSidebarOpen && <h1 className="font-bold text-xl tracking-tight text-white whitespace-nowrap">FamilyTreeAI</h1>}
         </div>
+
+        {/* Floating collapse handle on the right edge */}
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute -right-3 top-6 z-20 w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center shadow-lg transition-colors"
+          title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {isSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
 
         <nav className="flex-1 p-2 space-y-1">
           {NAV_ITEMS.filter(item => !item.adminOnly || user.role === 'admin' || user.role === 'superadmin').map(item => (
@@ -415,6 +437,7 @@ function AppContent() {
                 {activeView === 'editor' && 'Record Management'}
                 {activeView === 'smart-add' && 'AI Quick Import'}
                 {activeView === 'narrative' && 'AI Family Narrative'}
+                {activeView === 'settings' && 'Settings'}
                 {activeView === 'invites' && 'Invitations'}
             </h2>
             <div className="flex items-center gap-4">
@@ -467,6 +490,10 @@ function AppContent() {
 
              {activeView === 'narrative' && (
                  <NarrativeView data={treeData} />
+             )}
+
+             {activeView === 'settings' && (
+                 <SettingsView />
              )}
 
              {activeView === 'invites' && (

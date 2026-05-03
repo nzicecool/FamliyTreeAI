@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
-import { parseSmartEntry } from '../services/geminiService';
+import { aiService } from '../services/aiService';
 import { Person } from '../types';
 
 interface SmartAddProps {
@@ -8,6 +9,7 @@ interface SmartAddProps {
 }
 
 export const SmartAdd: React.FC<SmartAddProps> = ({ onParsed }) => {
+  const { getToken } = useAuth();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,17 +18,17 @@ export const SmartAdd: React.FC<SmartAddProps> = ({ onParsed }) => {
     if (!input.trim()) return;
     setLoading(true);
     setError('');
-    
+
     try {
-      const result = await parseSmartEntry(input);
-      if (result) {
-        onParsed(result);
+      const { person } = await aiService.parseSmartEntry(input, getToken);
+      if (person) {
+        onParsed(person);
         setInput('');
       } else {
         setError('Could not extract data. Please try being more specific.');
       }
-    } catch (e) {
-      setError('AI Service unavailable.');
+    } catch (e: any) {
+      setError(e?.message || 'AI service unavailable.');
     } finally {
       setLoading(false);
     }

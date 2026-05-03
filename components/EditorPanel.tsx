@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { Person, Gender } from '../types';
-import { generateBio } from '../services/geminiService';
+import { aiService } from '../services/aiService';
 import { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon, Network } from 'lucide-react';
 
 interface EditorPanelProps {
@@ -13,6 +14,8 @@ interface EditorPanelProps {
 }
 
 export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDelete, onSetRoot, onCancel, allPeople }) => {
+  const { getToken } = useAuth();
+  const [bioError, setBioError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Person>>({
     gender: Gender.Male,
     firstName: '',
@@ -72,9 +75,12 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
   const handleGenerateBio = async () => {
     if (!formData.firstName || !formData.lastName) return;
     setGeneratingBio(true);
+    setBioError(null);
     try {
-      const bio = await generateBio(formData as Person);
+      const { bio } = await aiService.generateBio(formData as Person, getToken);
       handleChange('bio', bio);
+    } catch (e: any) {
+      setBioError(e?.message || 'Could not reach the AI service.');
     } finally {
       setGeneratingBio(false);
     }
@@ -350,6 +356,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
               onChange={e => handleChange('bio', e.target.value)}
               placeholder="Write a short biography..."
            />
+           {bioError && <p className="text-xs text-red-400 mt-1">{bioError}</p>}
         </div>
 
         {/* Actions */}

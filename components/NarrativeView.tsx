@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { TreeData, Person } from '../types';
-import { generateFamilyNarrative } from '../services/geminiService';
-import { BookOpen, Sparkles, Loader2, Copy, Check, AlertTriangle } from 'lucide-react';
+import { aiService } from '../services/aiService';
+import { BookOpen, Sparkles, Loader2, Copy, Check, AlertTriangle, Info } from 'lucide-react';
 
 interface NarrativeViewProps {
   data: TreeData;
 }
 
 export const NarrativeView: React.FC<NarrativeViewProps> = ({ data }) => {
+  const { getToken } = useAuth();
   const peopleList = useMemo(
     () =>
       (Object.values(data.people) as Person[]).sort((a, b) =>
@@ -27,14 +29,17 @@ export const NarrativeView: React.FC<NarrativeViewProps> = ({ data }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [fellBack, setFellBack] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
     setNarrative('');
+    setFellBack(false);
     try {
-      const text = await generateFamilyNarrative(data, focusId || null);
+      const { narrative: text, meta } = await aiService.generateFamilyNarrative(data, focusId || null, getToken);
       setNarrative(text);
+      setFellBack(!!meta?.fellBackToGemini);
     } catch (e: any) {
       setError(e?.message || 'Something went wrong.');
     } finally {
@@ -106,6 +111,15 @@ export const NarrativeView: React.FC<NarrativeViewProps> = ({ data }) => {
             <div className="text-red-300 font-medium text-sm">Couldn't generate narrative</div>
             <div className="text-red-400/80 text-xs mt-1">{error}</div>
           </div>
+        </div>
+      )}
+
+      {fellBack && narrative && (
+        <div className="bg-amber-950/30 border border-amber-900/60 rounded-xl p-3 flex items-start gap-2">
+          <Info size={16} className="text-amber-400 mt-0.5 shrink-0" />
+          <span className="text-xs text-amber-200">
+            Your selected provider isn't configured yet, so we used the built-in Gemini service for this narrative. Add a key in Settings to use your chosen provider.
+          </span>
         </div>
       )}
 

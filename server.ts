@@ -5,8 +5,11 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import pg from 'pg';
 import { createClerkClient, verifyToken } from '@clerk/backend';
+import { complete, ProviderId, ALL_PROVIDERS, ProviderKeys, PERSON_JSON_HINT } from './aiProviders';
 
 const SUPERADMIN_EMAIL = 'myozscoop@gmail.com';
+const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
+type BYOProvider = typeof BYO_PROVIDERS[number];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,7 +56,48 @@ async function ensureSchema() {
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL DEFAULT 'gemini',
+      openai_key TEXT,
+      anthropic_key TEXT,
+      glm_key TEXT,
+      kimi_key TEXT,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
+}
+
+async function loadUserSettings(userId: string): Promise<{ provider: ProviderId; keys: ProviderKeys }> {
+  const res = await pool.query(
+    'SELECT provider, openai_key, anthropic_key, glm_key, kimi_key FROM user_settings WHERE user_id = $1',
+    [userId],
+  );
+  const row = res.rows[0];
+  if (!row) return { provider: 'gemini', keys: {} };
+  const provider = (ALL_PROVIDERS as string[]).includes(row.provider) ? (row.provider as ProviderId) : 'gemini';
+  return {
+    provider,
+    keys: {
+      openai: row.openai_key,
+      anthropic: row.anthropic_key,
+      glm: row.glm_key,
+      kimi: row.kimi_key,
+    },
+  };
+}
+
+function publicSettings(loaded: { provider: ProviderId; keys: ProviderKeys }) {
+  return {
+    provider: loaded.provider,
+    configured: {
+      openai: !!loaded.keys.openai,
+      anthropic: !!loaded.keys.anthropic,
+      glm: !!loaded.keys.glm,
+      kimi: !!loaded.keys.kimi,
+    },
+    hasGeminiServerKey: !!process.env.GEMINI_API_KEY,
+  };
 }
 
 type DbPerson = {
@@ -73,6 +117,90 @@ type DbPerson = {
   spouse_ids: string[];
   children_ids: string[];
 };
+
+function formatPersonLine(p: any): string {
+  const parts = [`${p.firstName} ${p.lastName} (${p.gender})`];
+  if (p.birthDate || p.birthPlace) parts.push(`born ${p.birthDate || '?'}${p.birthPlace ? ` in ${p.birthPlace}` : ''}`);
+  if (p.deathDate || p.deathPlace) parts.push(`died ${p.deathDate || '?'}${p.deathPlace ? ` in ${p.deathPlace}` : ''}`);
+  if (p.bio) parts.push(`notes: ${String(p.bio).slice(0, 200)}`);
+  return parts.join('; ');
+}
+
+function buildNarrativePrompt(data: any, focusId: string | null, maxPeople = 80): string {
+  const byId = data.people || {};
+  const people = Object.values(byId) as any[];
+  if (people.length === 0) return 'The tree has no people yet. Reply: "There are no records yet to write a narrative from."';
+
+  const focusPerson = (focusId && byId[focusId]) || byId[data.rootId] || people[0];
+  const focusName = focusPerson ? `${focusPerson.firstName} ${focusPerson.lastName}` : 'the family';
+
+  const include = new Set<string>();
+  const queue: string[] = [];
+  if (focusPerson) {
+    include.add(focusPerson.id);
+    queue.push(focusPerson.id);
+  }
+  while (queue.length && include.size < maxPeople) {
+    const id = queue.shift()!;
+    const p = byId[id];
+    if (!p) continue;
+    [p.fatherId, p.motherId].forEach((pid: string | null) => {
+      if (pid && byId[pid] && !include.has(pid)) {
+        include.add(pid);
+        queue.push(pid);
+      }
+    });
+    (p.childrenIds || []).forEach((cid: string) => {
+      if (byId[cid] && !include.has(cid)) {
+        include.add(cid);
+        queue.push(cid);
+      }
+    });
+    (p.spouseIds || []).forEach((sid: string) => {
+      if (byId[sid] && !include.has(sid)) include.add(sid);
+    });
+  }
+  for (const p of people) {
+    if (include.size >= maxPeople) break;
+    include.add(p.id);
+  }
+
+  const lines: string[] = [];
+  lines.push(`Focus person: ${focusName}.`);
+  lines.push(`Total people on record: ${people.length}. People included below: ${include.size}.`);
+  lines.push('', 'People:');
+  Array.from(include).forEach(id => {
+    const p = byId[id];
+    if (p) lines.push(`- ${formatPersonLine(p)}`);
+  });
+  lines.push('', 'Relationships:');
+  Array.from(include).forEach(id => {
+    const p = byId[id];
+    if (!p) return;
+    const name = `${p.firstName} ${p.lastName}`;
+    const father = p.fatherId ? byId[p.fatherId] : null;
+    const mother = p.motherId ? byId[p.motherId] : null;
+    if (father) lines.push(`- ${name} — father: ${father.firstName} ${father.lastName}`);
+    if (mother) lines.push(`- ${name} — mother: ${mother.firstName} ${mother.lastName}`);
+    (p.spouseIds || []).forEach((sid: string) => {
+      const sp = byId[sid];
+      if (sp && sid > p.id) lines.push(`- ${name} — spouse: ${sp.firstName} ${sp.lastName}`);
+    });
+  });
+
+  return `
+You are a warm, careful family historian. Using ONLY the records below, write a flowing narrative
+history of this family centered on the focus person. Span generations where the records allow.
+Group related people into paragraphs (e.g. by generation or branch). Mention dates and places when given.
+Do NOT invent specific facts (children, spouses, dates, places, occupations) that are not in the records.
+You may add gentle historical context for an era or place if a date is provided.
+If information is sparse, say so plainly rather than padding with speculation.
+Length: roughly 350–600 words. Use plain prose, no markdown headers, no bullet lists.
+
+Records:
+${lines.join('\n')}
+  `.trim();
+}
 
 function rowToPerson(row: DbPerson) {
   return {
@@ -348,6 +476,173 @@ async function startServer() {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+
+  // ----- Settings (per-user AI provider preference + BYO API keys) -----
+  app.get('/api/settings', authenticate, async (req: any, res) => {
+    try {
+      const loaded = await loadUserSettings(req.auth.userId);
+      res.json(publicSettings(loaded));
+    } catch (error: any) {
+      console.error('Load settings error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/settings', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { provider } = req.body || {};
+    if (!provider || !(ALL_PROVIDERS as string[]).includes(provider)) {
+      return res.status(400).json({ error: 'Invalid provider.' });
+    }
+    try {
+      await pool.query(
+        `INSERT INTO user_settings (user_id, provider, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET provider = EXCLUDED.provider, updated_at = NOW()`,
+        [userId, provider],
+      );
+      const loaded = await loadUserSettings(userId);
+      res.json(publicSettings(loaded));
+    } catch (error: any) {
+      console.error('Save settings error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/settings/key', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { provider, key } = req.body || {};
+    if (!BYO_PROVIDERS.includes(provider)) {
+      return res.status(400).json({ error: 'Invalid provider.' });
+    }
+    if (typeof key !== 'string' || !key.trim()) {
+      return res.status(400).json({ error: 'API key is required.' });
+    }
+    const column = `${provider}_key`;
+    try {
+      await pool.query(
+        `INSERT INTO user_settings (user_id, ${column}, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET ${column} = EXCLUDED.${column}, updated_at = NOW()`,
+        [userId, key.trim()],
+      );
+      const loaded = await loadUserSettings(userId);
+      res.json(publicSettings(loaded));
+    } catch (error: any) {
+      console.error('Save key error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/settings/key/:provider', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const provider = req.params.provider;
+    if (!BYO_PROVIDERS.includes(provider as BYOProvider)) {
+      return res.status(400).json({ error: 'Invalid provider.' });
+    }
+    const column = `${provider}_key`;
+    try {
+      await pool.query(
+        `UPDATE user_settings SET ${column} = NULL, updated_at = NOW() WHERE user_id = $1`,
+        [userId],
+      );
+      const loaded = await loadUserSettings(userId);
+      res.json(publicSettings(loaded));
+    } catch (error: any) {
+      console.error('Clear key error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ----- AI (server-side; provider keys never reach the browser) -----
+  const aiHandler = (
+    buildPrompt: (body: any) => { prompt: string; json?: boolean } | null,
+    parseResponse: (text: string, body: any) => any,
+  ) =>
+    async (req: any, res: any) => {
+      try {
+        const built = buildPrompt(req.body || {});
+        if (!built) return res.status(400).json({ error: 'Invalid request body.' });
+        const loaded = await loadUserSettings(req.auth.userId);
+        const result = await complete(loaded.provider, loaded.keys, built.prompt, {
+          json: !!built.json,
+          jsonSchemaHint: built.json ? PERSON_JSON_HINT : undefined,
+        });
+        const meta = {
+          provider: result.resolved.provider,
+          fellBackToGemini: result.resolved.reason === 'fallback-gemini',
+        };
+        res.json({ ...parseResponse(result.text, req.body || {}), meta });
+      } catch (error: any) {
+        const status = error?.status && Number.isInteger(error.status) ? error.status : 500;
+        console.error('AI handler error:', error);
+        res.status(status).json({ error: error?.message || 'AI request failed.' });
+      }
+    };
+
+  app.post(
+    '/api/ai/bio',
+    authenticate,
+    aiHandler(
+      (body) => {
+        const p = body?.person;
+        if (!p || !p.firstName) return null;
+        const prompt = `
+Write a short, engaging biography (max 150 words) for a genealogy record.
+The tone should be respectful and historical.
+
+Details:
+Name: ${p.firstName} ${p.lastName || ''}
+Gender: ${p.gender || 'Other'}
+Born: ${p.birthDate || 'Unknown'}${p.birthPlace ? ` at ${p.birthPlace}` : ''}
+Died: ${p.deathDate || 'Unknown'}${p.deathPlace ? ` at ${p.deathPlace}` : ''}
+
+If dates are missing, focus on the name and legacy. Avoid making up specific facts not provided,
+but you may add general historical context if a date is provided.
+        `.trim();
+        return { prompt };
+      },
+      (text) => ({ bio: text }),
+    ),
+  );
+
+  app.post(
+    '/api/ai/parse',
+    authenticate,
+    aiHandler(
+      (body) => {
+        const text = String(body?.text || '').trim();
+        if (!text) return null;
+        const prompt = `Extract genealogy information from the following text.\n\nText: "${text}"`;
+        return { prompt, json: true };
+      },
+      (text) => {
+        try {
+          // Strip code fences if any provider wrapped output.
+          const trimmed = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim();
+          const parsed = JSON.parse(trimmed);
+          return { person: parsed };
+        } catch {
+          return { person: null };
+        }
+      },
+    ),
+  );
+
+  app.post(
+    '/api/ai/narrative',
+    authenticate,
+    aiHandler(
+      (body) => {
+        const treeData = body?.treeData;
+        const focusId = body?.focusPersonId || null;
+        if (!treeData || !treeData.people) return null;
+        const prompt = buildNarrativePrompt(treeData, focusId);
+        return { prompt };
+      },
+      (text) => ({ narrative: text }),
+    ),
+  );
 
   app.delete('/api/invite/:email', authenticate, requireAdmin, async (req: any, res) => {
     const inviteEmail = String(req.params.email).toLowerCase().trim();

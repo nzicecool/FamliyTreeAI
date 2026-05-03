@@ -14,10 +14,8 @@ export default defineConfig(({ mode }) => {
         },
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
+      // Note: AI provider keys are intentionally NOT exposed to the client.
+      // All AI calls go through authenticated /api/ai/* endpoints on the server.
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
