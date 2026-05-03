@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import pg from 'pg';
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import { complete, ProviderId, ALL_PROVIDERS, ProviderKeys, PERSON_JSON_HINT } from './aiProviders';
+import { encryptString, decryptString, selfCheck as encryptionSelfCheck } from './cryptoUtil';
 
 const SUPERADMIN_EMAIL = 'myozscoop@gmail.com';
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
@@ -68,17 +69,30 @@ async function ensureSchema() {
   `);
 }
 
-async function loadUserSettings(userId: string): Promise<{ provider: ProviderId; keys: ProviderKeys }> {
+interface RawUserSettings {
+  provider: ProviderId;
+  encryptedKeys: { openai: string | null; anthropic: string | null; glm: string | null; kimi: string | null };
+}
+
+/**
+ * Loads the raw row. Encrypted ciphertext is NOT decrypted here — callers that
+ * actually need plaintext (i.e. the LLM dispatcher) call `decryptUserKeys`.
+ * GET /api/settings only inspects whether each blob is non-null and never
+ * touches the master key.
+ */
+async function loadUserSettingsRaw(userId: string): Promise<RawUserSettings> {
   const res = await pool.query(
     'SELECT provider, openai_key, anthropic_key, glm_key, kimi_key FROM user_settings WHERE user_id = $1',
     [userId],
   );
   const row = res.rows[0];
-  if (!row) return { provider: 'gemini', keys: {} };
+  if (!row) {
+    return { provider: 'gemini', encryptedKeys: { openai: null, anthropic: null, glm: null, kimi: null } };
+  }
   const provider = (ALL_PROVIDERS as string[]).includes(row.provider) ? (row.provider as ProviderId) : 'gemini';
   return {
     provider,
-    keys: {
+    encryptedKeys: {
       openai: row.openai_key,
       anthropic: row.anthropic_key,
       glm: row.glm_key,
@@ -87,14 +101,28 @@ async function loadUserSettings(userId: string): Promise<{ provider: ProviderId;
   };
 }
 
-function publicSettings(loaded: { provider: ProviderId; keys: ProviderKeys }) {
+/**
+ * Decrypts BYO keys for the authenticated user. Bound to (userId, provider)
+ * via AAD; tampered or wrong-user rows decrypt to null and behave as
+ * "not configured", causing the dispatcher to fall back to Gemini.
+ */
+function decryptUserKeys(raw: RawUserSettings, userId: string): ProviderKeys {
   return {
-    provider: loaded.provider,
+    openai: decryptString(raw.encryptedKeys.openai, userId, 'openai'),
+    anthropic: decryptString(raw.encryptedKeys.anthropic, userId, 'anthropic'),
+    glm: decryptString(raw.encryptedKeys.glm, userId, 'glm'),
+    kimi: decryptString(raw.encryptedKeys.kimi, userId, 'kimi'),
+  };
+}
+
+function publicSettings(raw: RawUserSettings) {
+  return {
+    provider: raw.provider,
     configured: {
-      openai: !!loaded.keys.openai,
-      anthropic: !!loaded.keys.anthropic,
-      glm: !!loaded.keys.glm,
-      kimi: !!loaded.keys.kimi,
+      openai: !!raw.encryptedKeys.openai,
+      anthropic: !!raw.encryptedKeys.anthropic,
+      glm: !!raw.encryptedKeys.glm,
+      kimi: !!raw.encryptedKeys.kimi,
     },
     hasGeminiServerKey: !!process.env.GEMINI_API_KEY,
   };
@@ -480,8 +508,8 @@ async function startServer() {
   // ----- Settings (per-user AI provider preference + BYO API keys) -----
   app.get('/api/settings', authenticate, async (req: any, res) => {
     try {
-      const loaded = await loadUserSettings(req.auth.userId);
-      res.json(publicSettings(loaded));
+      const raw = await loadUserSettingsRaw(req.auth.userId);
+      res.json(publicSettings(raw));
     } catch (error: any) {
       console.error('Load settings error:', error);
       res.status(500).json({ error: error.message });
@@ -501,8 +529,8 @@ async function startServer() {
          ON CONFLICT (user_id) DO UPDATE SET provider = EXCLUDED.provider, updated_at = NOW()`,
         [userId, provider],
       );
-      const loaded = await loadUserSettings(userId);
-      res.json(publicSettings(loaded));
+      const raw = await loadUserSettingsRaw(userId);
+      res.json(publicSettings(raw));
     } catch (error: any) {
       console.error('Save settings error:', error);
       res.status(500).json({ error: error.message });
@@ -520,14 +548,16 @@ async function startServer() {
     }
     const column = `${provider}_key`;
     try {
+      // Encrypt at the boundary; plaintext key never touches the DB.
+      const ciphertext = encryptString(key.trim(), userId, provider);
       await pool.query(
         `INSERT INTO user_settings (user_id, ${column}, updated_at)
          VALUES ($1, $2, NOW())
          ON CONFLICT (user_id) DO UPDATE SET ${column} = EXCLUDED.${column}, updated_at = NOW()`,
-        [userId, key.trim()],
+        [userId, ciphertext],
       );
-      const loaded = await loadUserSettings(userId);
-      res.json(publicSettings(loaded));
+      const raw = await loadUserSettingsRaw(userId);
+      res.json(publicSettings(raw));
     } catch (error: any) {
       console.error('Save key error:', error);
       res.status(500).json({ error: error.message });
@@ -546,8 +576,8 @@ async function startServer() {
         `UPDATE user_settings SET ${column} = NULL, updated_at = NOW() WHERE user_id = $1`,
         [userId],
       );
-      const loaded = await loadUserSettings(userId);
-      res.json(publicSettings(loaded));
+      const raw = await loadUserSettingsRaw(userId);
+      res.json(publicSettings(raw));
     } catch (error: any) {
       console.error('Clear key error:', error);
       res.status(500).json({ error: error.message });
@@ -563,8 +593,12 @@ async function startServer() {
       try {
         const built = buildPrompt(req.body || {});
         if (!built) return res.status(400).json({ error: 'Invalid request body.' });
-        const loaded = await loadUserSettings(req.auth.userId);
-        const result = await complete(loaded.provider, loaded.keys, built.prompt, {
+        const userId = req.auth.userId;
+        // Decryption only happens here: behind authenticate middleware, at the
+        // exact moment we are about to call the LLM on this user's behalf.
+        const raw = await loadUserSettingsRaw(userId);
+        const decryptedKeys = decryptUserKeys(raw, userId);
+        const result = await complete(raw.provider, decryptedKeys, built.prompt, {
           json: !!built.json,
           jsonSchemaHint: built.json ? PERSON_JSON_HINT : undefined,
         });
@@ -684,6 +718,15 @@ but you may add general historical context if a date is provided.
     console.log('Postgres schema ready.');
   } catch (err: any) {
     console.error('Postgres schema bootstrap failed:', err.message);
+  }
+
+  try {
+    encryptionSelfCheck();
+    console.log('Encryption self-check OK.');
+  } catch (err: any) {
+    // Don't crash the server (tree features still work without BYO keys),
+    // but make the misconfiguration loud so operators notice.
+    console.error('ENCRYPTION SELF-CHECK FAILED — BYO API key encryption is not usable:', err.message);
   }
 
   app.listen(PORT, '0.0.0.0', () => {

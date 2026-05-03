@@ -61,6 +61,13 @@ All AI calls run server-side. Provider keys never reach the browser.
 - If a user picks a BYO provider but hasn't supplied a key, the server transparently falls back to Gemini and the response includes `meta.fellBackToGemini: true` so the UI can warn.
 - Provider dispatch lives in `aiProviders.ts`.
 
+### Key encryption at rest
+- BYO API keys are encrypted with **AES-256-GCM** before being written to Postgres. See `cryptoUtil.ts`.
+- The master key is taken from `ENCRYPTION_KEY` (base64-encoded 32 bytes) if set; otherwise scrypt-derived from `CLERK_SECRET_KEY` with a fixed app salt so the app works on Replit without an extra secret.
+- Each ciphertext is bound to `(userId, provider)` via AES-GCM AAD, so a stolen DB row cannot be moved between users/providers.
+- Decryption only happens at one place in the codebase: inside the `/api/ai/*` handler, after Clerk authentication, immediately before the LLM call. `GET /api/settings` only checks ciphertext non-null and never touches the master key.
+- Stored format: `v1:<iv_b64>:<authTag_b64>:<ciphertext_b64>`. Any value that fails to decrypt (tampered, wrong AAD, legacy plaintext) is treated as "not configured" and the dispatcher falls back to Gemini.
+
 ## Project Layout
 
 - `index.html`, `index.tsx` — Vite entry. Sets up `<ClerkProvider>` and routes `/sso-callback` to Clerk's redirect handler.
