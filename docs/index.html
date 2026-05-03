@@ -1,0 +1,489 @@
+<!--
+  FamilyTreeAI — Landing page for GitHub Pages.
+
+  Deploy: in your GitHub repo settings, set Pages source to
+  "Deploy from a branch" → branch: main, folder: /docs.
+
+  Before publishing, replace every occurrence of "YOUR_GITHUB/familytreeai"
+  in this file with your actual GitHub repo path (e.g. "alice/familytreeai").
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FamilyTreeAI — Self-hostable, AI-powered family history</title>
+    <meta
+      name="description"
+      content="Open-source, self-hostable family tree app with AI bio writing, smart import, and family narratives. Bring your own LLM keys, encrypted at rest."
+    />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z'/%3E%3Cpath d='M2 21c0-3 1.85-5.36 5.08-6'/%3E%3C/svg%3E" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                400: '#38bdf8',
+                500: '#0ea5e9',
+                600: '#0284c7',
+                700: '#0369a1',
+              },
+            },
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html { scroll-behavior: smooth; }
+      body {
+        background:
+          radial-gradient(1200px 600px at 20% -10%, rgba(14,165,233,0.18), transparent 60%),
+          radial-gradient(800px 400px at 90% 10%, rgba(56,189,248,0.10), transparent 60%),
+          #020617;
+      }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .grid-bg {
+        background-image:
+          linear-gradient(rgba(148,163,184,0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148,163,184,0.06) 1px, transparent 1px);
+        background-size: 36px 36px;
+      }
+      .glow {
+        box-shadow: 0 0 0 1px rgba(56,189,248,0.15), 0 30px 80px -20px rgba(14,165,233,0.45);
+      }
+    </style>
+  </head>
+  <body class="text-slate-200 font-sans antialiased min-h-screen">
+    <!-- NAV -->
+    <header class="sticky top-0 z-30 backdrop-blur bg-slate-950/60 border-b border-slate-900">
+      <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="#top" class="flex items-center gap-2">
+          <span class="bg-brand-600 p-1.5 rounded-lg inline-flex">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+          </span>
+          <span class="font-bold tracking-tight text-white">FamilyTreeAI</span>
+        </a>
+        <nav class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+          <a href="#features" class="hover:text-white transition">Features</a>
+          <a href="#security" class="hover:text-white transition">Security</a>
+          <a href="#self-host" class="hover:text-white transition">Self-host</a>
+          <a href="#stack" class="hover:text-white transition">Stack</a>
+        </nav>
+        <a
+          href="https://github.com/YOUR_GITHUB/familytreeai"
+          class="inline-flex items-center gap-2 text-sm bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-1.5 rounded-lg transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.11.79-.25.79-.55v-2.04c-3.2.69-3.87-1.37-3.87-1.37-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section id="top" class="relative">
+      <div class="grid-bg absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_70%)] pointer-events-none"></div>
+      <div class="relative max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <div class="inline-flex items-center gap-2 text-xs text-brand-400 bg-brand-500/10 border border-brand-500/30 rounded-full px-3 py-1 mb-6">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+          Open Source · Self-Hostable · Bring Your Own LLM
+        </div>
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.05] max-w-3xl">
+          Your family history.<br />
+          <span class="text-brand-400">Written by you, with AI on call.</span>
+        </h1>
+        <p class="mt-6 text-lg text-slate-400 max-w-2xl leading-relaxed">
+          A self-hostable family tree app with an interactive visualizer, AI bio writing, smart record import, and grounded family narratives. Free Gemini built in — or plug in your own OpenAI, Anthropic, GLM, or Kimi key. API keys are encrypted at rest with AES-256-GCM. Your data stays in your Postgres.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a
+            href="https://github.com/YOUR_GITHUB/familytreeai"
+            class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-medium px-5 py-3 rounded-lg transition glow"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.11.79-.25.79-.55v-2.04c-3.2.69-3.87-1.37-3.87-1.37-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+            View on GitHub
+          </a>
+          <a
+            href="#self-host"
+            class="inline-flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-white font-medium px-5 py-3 rounded-lg transition"
+          >
+            Self-host in 5 minutes →
+          </a>
+        </div>
+
+        <!-- Stat strip -->
+        <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl">
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+            <div class="text-2xl font-bold text-white">5</div>
+            <div class="text-xs text-slate-400 mt-1">LLM providers supported</div>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+            <div class="text-2xl font-bold text-white">AES-256</div>
+            <div class="text-xs text-slate-400 mt-1">Keys encrypted at rest</div>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+            <div class="text-2xl font-bold text-white">Postgres</div>
+            <div class="text-xs text-slate-400 mt-1">Your database, your control</div>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+            <div class="text-2xl font-bold text-white">GEDCOM</div>
+            <div class="text-xs text-slate-400 mt-1">Standard export, no lock-in</div>
+          </div>
+        </div>
+
+        <!-- Mock app preview -->
+        <div class="mt-16 relative">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 shadow-2xl glow">
+            <div class="flex items-center gap-1.5 px-2 py-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500/70"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/70"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/70"></span>
+              <span class="ml-3 text-xs text-slate-500 mono">familytree.local</span>
+            </div>
+            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 grid grid-cols-12 min-h-[340px]">
+              <!-- sidebar mock -->
+              <aside class="col-span-3 border-r border-slate-800 p-3 space-y-1 text-xs text-slate-300">
+                <div class="px-2 py-1.5 rounded bg-brand-600/20 border border-brand-600/40 text-white flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M5 12h-2M21 12h-2M12 5V3M12 21v-2M7.05 7.05 5.64 5.64M18.36 18.36l-1.41-1.41M7.05 16.95 5.64 18.36M18.36 5.64l-1.41 1.41"/></svg>
+                  Visualize
+                </div>
+                <div class="px-2 py-1.5 rounded hover:bg-slate-800/60 flex items-center gap-2 text-slate-400">📝 Manage Records</div>
+                <div class="px-2 py-1.5 rounded hover:bg-slate-800/60 flex items-center gap-2 text-slate-400">✨ AI Import</div>
+                <div class="px-2 py-1.5 rounded hover:bg-slate-800/60 flex items-center gap-2 text-slate-400">📖 AI Narrative</div>
+                <div class="px-2 py-1.5 rounded hover:bg-slate-800/60 flex items-center gap-2 text-slate-400">⚙️ Settings</div>
+              </aside>
+              <!-- canvas mock -->
+              <div class="col-span-9 p-6 relative bg-slate-950">
+                <div class="absolute inset-0 grid-bg opacity-40"></div>
+                <div class="relative">
+                  <div class="flex items-center gap-2 text-xs text-slate-500 mb-6">
+                    <span class="px-2 py-0.5 bg-slate-800 rounded">Descendants</span>
+                    <span class="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-500">Ancestors</span>
+                    <span class="ml-auto px-2 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-500">🔍 Search…</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-6">
+                    <div class="flex items-center gap-3">
+                      <div class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white">👨 Arthur Vance</div>
+                      <div class="text-pink-400">♥</div>
+                      <div class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white">👩 Mae Vance</div>
+                    </div>
+                    <div class="flex gap-4">
+                      <div class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">Eleanor</div>
+                      <div class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">Thomas</div>
+                      <div class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">Margaret</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="relative py-20 md:py-28 border-t border-slate-900">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="max-w-2xl">
+          <div class="text-xs uppercase tracking-widest text-brand-400 font-semibold">Features</div>
+          <h2 class="mt-3 text-3xl md:text-4xl font-bold text-white tracking-tight">A genealogy app for the people who'd rather <span class="text-brand-400">own their data</span>.</h2>
+          <p class="mt-4 text-slate-400">Built around a fast, draggable tree, real AI helpers, and a refreshing absence of subscription dialogs.</p>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- card -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M6 17l4-4M18 17l-4-4"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Interactive Family Tree</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Pan, zoom, and drag any node. Toggle between descendants and ancestors. Search to jump to anyone in your tree instantly.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.5 4.5L6 9l4.5 1.5L12 15l1.5-4.5L18 9l-4.5-1.5z"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">AI Bio Writer</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Generate a respectful, grounded biography for any person from the basics you've recorded — names, dates, places.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Smart Import from Text</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Paste an obituary or a sentence and the AI extracts a structured person record — name, gender, dates, places — ready to add.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">AI Family Narrative</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Pick a focus person and get a 350–600 word narrative woven from your records — strictly grounded, no fabrication.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-4 4M21 6l-4-4M2 22l4-4M2 18l4 4"/><path d="M12 2a10 10 0 1 0 10 10"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Bring Your Own LLM</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Built-in Google Gemini for the fastest start, plus OpenAI, Anthropic, Zhipu GLM, and Moonshot Kimi via your own API key.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Encrypted API Keys at Rest</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Your provider keys are encrypted with AES-256-GCM, bound to your user via AAD, and decrypted only at the moment of an LLM call.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Multi-User with Invitations</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Clerk-powered auth out of the box. Admins can invite collaborators by email (optional AgentMail integration).</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">GEDCOM Export</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Download your tree as a standard GEDCOM file at any time. Take it to any other genealogy program — no lock-in.</p>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+            </div>
+            <h3 class="text-white font-semibold">Postgres-backed</h3>
+            <p class="mt-2 text-sm text-slate-400 leading-relaxed">Your records live in the Postgres of your choice — Replit, Neon, Supabase, or your own server. Standard schema, no exotic ORM.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section id="security" class="relative py-20 md:py-28 border-t border-slate-900">
+      <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
+        <div>
+          <div class="text-xs uppercase tracking-widest text-brand-400 font-semibold">Security</div>
+          <h2 class="mt-3 text-3xl md:text-4xl font-bold text-white tracking-tight">No keys in the browser. <span class="text-brand-400">Encrypted in the database.</span></h2>
+          <p class="mt-4 text-slate-400 leading-relaxed">All AI calls are dispatched from the server. Your provider API keys never reach the browser bundle, and the only place they're decrypted is the exact moment we're about to make an LLM request on your behalf.</p>
+
+          <div class="mt-8 space-y-5">
+            <div>
+              <div class="text-white font-semibold">AES-256-GCM at rest</div>
+              <p class="text-sm text-slate-400 mt-1">Authenticated encryption from Node's built-in crypto. Each ciphertext is bound to <span class="mono text-slate-300">(userId, provider)</span> via AAD — rows can't be shuffled between users or providers.</p>
+            </div>
+            <div>
+              <div class="text-white font-semibold">Server-only AI dispatch</div>
+              <p class="text-sm text-slate-400 mt-1">Every <span class="mono text-slate-300">/api/ai/*</span> route sits behind Clerk authentication. The browser never sees provider keys, only the model's response.</p>
+            </div>
+            <div>
+              <div class="text-white font-semibold">Decrypt only on demand</div>
+              <p class="text-sm text-slate-400 mt-1">Settings reads return booleans. Decryption fires once per request, immediately before the LLM call, and the plaintext is never logged or persisted.</p>
+            </div>
+            <div>
+              <div class="text-white font-semibold">Boot-time self-check</div>
+              <p class="text-sm text-slate-400 mt-1">On startup the server runs an encrypt → decrypt round-trip and logs a loud, unmissable error if the master key is missing or wrong, so misconfiguration never goes unnoticed.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 glow">
+          <div class="text-sm text-slate-400 mb-4">Encryption flow</div>
+
+          <div class="space-y-4">
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+              <div class="text-xs text-slate-500 mb-2">Your API key (in memory only)</div>
+              <div class="mono text-sm text-emerald-300">sk-proj-aBcD1234…ZyXw</div>
+            </div>
+            <div class="flex items-center justify-center text-slate-600 text-xs">
+              <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full mono">↓ AES-256-GCM + AAD(userId, provider) ↓</span>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+              <div class="text-xs text-slate-500 mb-2">Stored in Postgres</div>
+              <div class="mono text-sm text-brand-300 break-all">v1:o4DPGe//UHVtSqW9:tZ1kJp…:Q2lwaGVydGV4dEhlcmU=</div>
+            </div>
+            <div class="flex items-center justify-center text-slate-600 text-xs">
+              <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full mono">↓ decrypt only inside /api/ai/* ↓</span>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+              <div class="text-xs text-slate-500 mb-2">LLM request to OpenAI / Anthropic / GLM / Kimi</div>
+              <div class="mono text-sm text-slate-300">Authorization: Bearer ••••••••••••••</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SELF HOST -->
+    <section id="self-host" class="relative py-20 md:py-28 border-t border-slate-900">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="max-w-2xl">
+          <div class="text-xs uppercase tracking-widest text-brand-400 font-semibold">Self-hosting</div>
+          <h2 class="mt-3 text-3xl md:text-4xl font-bold text-white tracking-tight">Run it on your laptop, your VPS, or your <span class="text-brand-400">Raspberry Pi</span>.</h2>
+          <p class="mt-4 text-slate-400">Standard Node.js + Postgres. No Docker required. Five env vars and you're up.</p>
+        </div>
+
+        <div class="mt-12 grid md:grid-cols-2 gap-8">
+          <ol class="space-y-5">
+            <li class="flex gap-4">
+              <div class="shrink-0 w-8 h-8 rounded-full bg-brand-600/20 border border-brand-600/40 text-brand-300 flex items-center justify-center text-sm font-bold">1</div>
+              <div>
+                <div class="text-white font-semibold">Clone & install</div>
+                <p class="text-sm text-slate-400 mt-1">Node.js 20+ and a Postgres URL is all you need. Vite handles the dev server.</p>
+              </div>
+            </li>
+            <li class="flex gap-4">
+              <div class="shrink-0 w-8 h-8 rounded-full bg-brand-600/20 border border-brand-600/40 text-brand-300 flex items-center justify-center text-sm font-bold">2</div>
+              <div>
+                <div class="text-white font-semibold">Add your secrets</div>
+                <p class="text-sm text-slate-400 mt-1">Clerk for auth, a Postgres URL for storage, a Gemini key for the built-in AI default. Everything else is optional.</p>
+              </div>
+            </li>
+            <li class="flex gap-4">
+              <div class="shrink-0 w-8 h-8 rounded-full bg-brand-600/20 border border-brand-600/40 text-brand-300 flex items-center justify-center text-sm font-bold">3</div>
+              <div>
+                <div class="text-white font-semibold">Start it up</div>
+                <p class="text-sm text-slate-400 mt-1">One command runs the Express + Vite server on port 5000. Schema is bootstrapped automatically on first boot.</p>
+              </div>
+            </li>
+            <li class="flex gap-4">
+              <div class="shrink-0 w-8 h-8 rounded-full bg-brand-600/20 border border-brand-600/40 text-brand-300 flex items-center justify-center text-sm font-bold">4</div>
+              <div>
+                <div class="text-white font-semibold">Invite your family</div>
+                <p class="text-sm text-slate-400 mt-1">Sign in, add a few people, and (optionally) wire up AgentMail to send invite emails to relatives.</p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+            <div class="px-4 py-2 border-b border-slate-800 flex items-center justify-between">
+              <span class="mono text-xs text-slate-500">terminal</span>
+              <span class="text-xs text-slate-600">bash</span>
+            </div>
+            <pre class="mono text-xs leading-relaxed text-slate-300 p-4 overflow-x-auto"><span class="text-slate-500"># 1. Clone the repo</span>
+git clone https://github.com/YOUR_GITHUB/familytreeai.git
+<span class="text-slate-300">cd</span> familytreeai
+
+<span class="text-slate-500"># 2. Install dependencies</span>
+npm install
+
+<span class="text-slate-500"># 3. Set environment variables</span>
+<span class="text-slate-300">export</span> DATABASE_URL=<span class="text-emerald-300">"postgres://user:pw@host/db"</span>
+<span class="text-slate-300">export</span> CLERK_SECRET_KEY=<span class="text-emerald-300">"sk_…"</span>
+<span class="text-slate-300">export</span> VITE_CLERK_PUBLISHABLE_KEY=<span class="text-emerald-300">"pk_…"</span>
+<span class="text-slate-300">export</span> GEMINI_API_KEY=<span class="text-emerald-300">"AIza…"</span>
+
+<span class="text-slate-500"># Optional</span>
+<span class="text-slate-300">export</span> ENCRYPTION_KEY=<span class="text-emerald-300">"$(openssl rand -base64 32)"</span>
+<span class="text-slate-300">export</span> AGENTMAIL_API_KEY=<span class="text-emerald-300">"…"</span>
+
+<span class="text-slate-500"># 4. Run it</span>
+npm run dev
+
+<span class="text-slate-500"># Open http://localhost:5000</span></pre>
+          </div>
+        </div>
+
+        <!-- Env table -->
+        <div class="mt-14">
+          <h3 class="text-white font-semibold text-lg">Environment variables</h3>
+          <div class="mt-4 overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-900/60 text-slate-400">
+                <tr>
+                  <th class="text-left font-medium px-4 py-2">Variable</th>
+                  <th class="text-left font-medium px-4 py-2">Required?</th>
+                  <th class="text-left font-medium px-4 py-2">What it does</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300">
+                <tr><td class="mono px-4 py-2 text-brand-300">DATABASE_URL</td><td class="px-4 py-2 text-emerald-400">Required</td><td class="px-4 py-2">Postgres connection string for your tree, settings, and invites.</td></tr>
+                <tr><td class="mono px-4 py-2 text-brand-300">CLERK_SECRET_KEY</td><td class="px-4 py-2 text-emerald-400">Required</td><td class="px-4 py-2">Server-side Clerk key for verifying user sessions.</td></tr>
+                <tr><td class="mono px-4 py-2 text-brand-300">VITE_CLERK_PUBLISHABLE_KEY</td><td class="px-4 py-2 text-emerald-400">Required</td><td class="px-4 py-2">Client-side Clerk key for the sign-in UI.</td></tr>
+                <tr><td class="mono px-4 py-2 text-brand-300">GEMINI_API_KEY</td><td class="px-4 py-2 text-amber-400">Recommended</td><td class="px-4 py-2">Powers the built-in AI default. Without it, only BYO providers work.</td></tr>
+                <tr><td class="mono px-4 py-2 text-brand-300">ENCRYPTION_KEY</td><td class="px-4 py-2 text-slate-400">Optional</td><td class="px-4 py-2">Base64-encoded 32 bytes. If absent, derived deterministically from your Clerk secret.</td></tr>
+                <tr><td class="mono px-4 py-2 text-brand-300">AGENTMAIL_API_KEY</td><td class="px-4 py-2 text-slate-400">Optional</td><td class="px-4 py-2">Sends invite emails when admins invite collaborators.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section id="stack" class="relative py-20 md:py-24 border-t border-slate-900">
+      <div class="max-w-6xl mx-auto px-6 text-center">
+        <div class="text-xs uppercase tracking-widest text-brand-400 font-semibold">Tech stack</div>
+        <h2 class="mt-3 text-3xl md:text-4xl font-bold text-white tracking-tight">Built on tools you already trust.</h2>
+        <div class="mt-10 flex flex-wrap justify-center gap-2">
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">React 19</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Vite</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">TypeScript</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Tailwind CSS</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Express</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">PostgreSQL</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Clerk Auth</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">D3 Hierarchy</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Lucide Icons</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Google Gemini</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">OpenAI</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Anthropic</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Zhipu GLM</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-sm text-slate-300">Moonshot Kimi</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="relative py-20 md:py-28 border-t border-slate-900">
+      <div class="max-w-4xl mx-auto px-6 text-center">
+        <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Ready to own your family history?</h2>
+        <p class="mt-4 text-slate-400 max-w-xl mx-auto">Open source, self-hostable, and private by design. Set it up in a few minutes — no subscription, no upsell.</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a href="https://github.com/YOUR_GITHUB/familytreeai" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-medium px-5 py-3 rounded-lg transition glow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.11.79-.25.79-.55v-2.04c-3.2.69-3.87-1.37-3.87-1.37-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+            Star on GitHub
+          </a>
+          <a href="#self-host" class="inline-flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-white font-medium px-5 py-3 rounded-lg transition">
+            Setup guide →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-900 py-10">
+      <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+        <div class="flex items-center gap-2">
+          <span class="bg-brand-600/20 border border-brand-600/40 p-1 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand-300"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+          </span>
+          FamilyTreeAI · Open Source
+        </div>
+        <div class="flex items-center gap-5">
+          <a href="https://github.com/YOUR_GITHUB/familytreeai" class="hover:text-slate-300 transition">GitHub</a>
+          <a href="#features" class="hover:text-slate-300 transition">Features</a>
+          <a href="#self-host" class="hover:text-slate-300 transition">Self-host</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
