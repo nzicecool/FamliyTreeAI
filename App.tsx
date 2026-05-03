@@ -6,6 +6,7 @@ import { EditorPanel } from './components/EditorPanel';
 import { SmartAdd } from './components/SmartAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { InviteManager } from './components/InviteManager';
+import { NarrativeView } from './components/NarrativeView';
 import { storageService } from './services/storageService';
 import { generateGedcom } from './services/gedcomService';
 import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle } from 'lucide-react';
@@ -413,6 +414,8 @@ function AppContent() {
                 {activeView === 'tree' && 'Family Tree Visualization'}
                 {activeView === 'editor' && 'Record Management'}
                 {activeView === 'smart-add' && 'AI Quick Import'}
+                {activeView === 'narrative' && 'AI Family Narrative'}
+                {activeView === 'invites' && 'Invitations'}
             </h2>
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3 pr-4 border-r border-slate-800">
@@ -460,6 +463,10 @@ function AppContent() {
                  <div className="max-w-2xl mx-auto mt-10">
                     <SmartAdd onParsed={handleSmartAdd} />
                  </div>
+             )}
+
+             {activeView === 'narrative' && (
+                 <NarrativeView data={treeData} />
              )}
 
              {activeView === 'invites' && (

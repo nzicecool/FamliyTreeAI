@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import * as d3 from 'd3';
 import { TreeData, Person } from '../types';
-import { ArrowUp, Home, ChevronRight, UserPlus, Users, ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
+import { ArrowUp, ArrowDown, Home, ChevronRight, UserPlus, Users, ZoomIn, ZoomOut, Maximize2, RotateCcw, Search, X } from 'lucide-react';
+
+type TreeDirection = 'descendants' | 'ancestors';
 
 interface TreeVisualizerProps {
   data: TreeData;
@@ -29,7 +31,7 @@ const personToAttrs = (p: Person): NodeAttrs => ({
   photo: p.photo,
 });
 
-const buildHierarchy = (data: TreeData): d3.HierarchyNode<any> | null => {
+const buildHierarchy = (data: TreeData, direction: TreeDirection): d3.HierarchyNode<any> | null => {
   const { people, rootId } = data;
   const rootPerson = people[rootId];
   if (!rootPerson) return null;
@@ -45,12 +47,13 @@ const buildHierarchy = (data: TreeData): d3.HierarchyNode<any> | null => {
       attributes: personToAttrs(person),
       children: [],
     };
-    if (person.childrenIds && person.childrenIds.length > 0) {
-      person.childrenIds.forEach(childId => {
-        const childNode = buildNode(childId);
-        if (childNode) node.children.push(childNode);
-      });
-    }
+    const nextIds: string[] = direction === 'descendants'
+      ? (person.childrenIds || [])
+      : [person.fatherId, person.motherId].filter((x): x is string => !!x);
+    nextIds.forEach(nextId => {
+      const child = buildNode(nextId);
+      if (child) node.children.push(child);
+    });
     return node;
   };
 
@@ -187,11 +190,26 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
   const [dimensions, setDimensions] = React.useState({ width: 800, height: 600 });
   const [viewTransform, setViewTransform] = React.useState<string>('translate(50,50) scale(1)');
   const [nodeOverrides, setNodeOverrides] = React.useState<Record<string, { x: number; y: number }>>({});
+  const [direction, setDirection] = React.useState<TreeDirection>('descendants');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Reset per-node positions when the tree's root changes.
+  // Reset per-node positions when the tree's root or layout direction changes.
   React.useEffect(() => {
     setNodeOverrides({});
-  }, [data.rootId]);
+  }, [data.rootId, direction]);
+
+  // Close search dropdown on outside click.
+  React.useEffect(() => {
+    if (!searchOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!searchContainerRef.current) return;
+      if (!searchContainerRef.current.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [searchOpen]);
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -251,7 +269,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
 
   const rootPerson = data.people[data.rootId];
 
-  // Descendants reachable from current root via childrenIds.
+  // People reachable from current root in the chosen direction (descendants or ancestors).
   const descendants = useMemo(() => {
     const set = new Set<string>();
     if (!rootPerson) return set;
@@ -260,10 +278,14 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       const id = queue.shift()!;
       if (set.has(id) || !data.people[id]) continue;
       set.add(id);
-      for (const cid of data.people[id].childrenIds || []) queue.push(cid);
+      const p = data.people[id];
+      const nextIds: string[] = direction === 'descendants'
+        ? (p.childrenIds || [])
+        : [p.fatherId, p.motherId].filter((x): x is string => !!x);
+      for (const nid of nextIds) queue.push(nid);
     }
     return set;
-  }, [data, rootPerson]);
+  }, [data, rootPerson, direction]);
 
   // Layout descendants with d3.tree, classify spouses, and produce base positions.
   const layout = useMemo(() => {
@@ -275,7 +297,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       reachable: new Set<string>(descendants),
     };
 
-    const root = buildHierarchy(data);
+    const root = buildHierarchy(data, direction);
     if (!root) return empty;
 
     const treeLayout = d3.tree<any>().size([
@@ -359,7 +381,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       attachedSpouses,
       reachable,
     };
-  }, [data, dimensions, descendants]);
+  }, [data, dimensions, descendants, direction]);
 
   // Effective positions (base ⊕ user overrides), and link path computations.
   const view = useMemo(() => {
@@ -446,6 +468,23 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
   const hasNodes = layout.treeNodes.length > 0;
   const hasOverrides = Object.keys(nodeOverrides).length > 0;
 
+  // Search: case-insensitive match on first/last name; surface up to 8 results.
+  const searchResults = useMemo<Person[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const all = Object.values(data.people) as Person[];
+    return all
+      .filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q))
+      .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`))
+      .slice(0, 8);
+  }, [searchQuery, data.people]);
+
+  const pickSearchResult = (id: string) => {
+    setSearchQuery('');
+    setSearchOpen(false);
+    onSetRoot(id);
+  };
+
   const handleNodeDrag = (id: string, x: number, y: number) => {
     setNodeOverrides(prev => ({ ...prev, [id]: { x, y } }));
   };
@@ -454,8 +493,8 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
   return (
     <div className="w-full h-full flex flex-col gap-3">
       {/* Navigation header */}
-      <div className="flex items-center justify-between gap-3 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center justify-between gap-3 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <button
             onClick={() => parentOfRoot && onSetRoot(parentOfRoot.id)}
             disabled={!parentOfRoot}
@@ -475,6 +514,37 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
               Top
             </button>
           )}
+
+          {/* Direction toggle */}
+          <div className="flex items-center bg-slate-800 rounded-lg p-0.5 ml-1" role="group" aria-label="Tree direction">
+            <button
+              type="button"
+              onClick={() => setDirection('descendants')}
+              className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md transition-colors ${
+                direction === 'descendants'
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Show descendants (children, grandchildren, …)"
+            >
+              <ArrowDown size={13} />
+              Descendants
+            </button>
+            <button
+              type="button"
+              onClick={() => setDirection('ancestors')}
+              className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md transition-colors ${
+                direction === 'ancestors'
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Show ancestors (parents, grandparents, …)"
+            >
+              <ArrowUp size={13} />
+              Ancestors
+            </button>
+          </div>
+
           <div className="flex items-center gap-1.5 text-sm text-slate-400 min-w-0 truncate">
             <ChevronRight size={14} className="text-slate-600 shrink-0" />
             <span className="text-slate-500 shrink-0">Root:</span>
@@ -483,8 +553,81 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
             </span>
           </div>
         </div>
-        <div className="text-xs text-slate-500 shrink-0 hidden sm:block">
-          {layout.reachable.size} of {totalPeople} shown
+
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Search */}
+          <div ref={searchContainerRef} className="relative">
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') {
+                    setSearchQuery('');
+                    setSearchOpen(false);
+                    (e.target as HTMLInputElement).blur();
+                  } else if (e.key === 'Enter' && searchResults[0]) {
+                    pickSearchResult(searchResults[0].id);
+                  }
+                }}
+                placeholder="Search people…"
+                className="w-44 sm:w-56 bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-7 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchOpen(false);
+                  }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200 p-0.5"
+                  title="Clear"
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            {searchOpen && searchQuery.trim() && (
+              <div className="absolute right-0 mt-1 w-72 max-h-72 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20">
+                {searchResults.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">No matches</div>
+                ) : (
+                  searchResults.map(p => {
+                    const isMale = p.gender === 'Male';
+                    const year = p.birthDate?.split('-')[0];
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => pickSearchResult(p.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-700 transition-colors"
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: isMale ? '#0ea5e9' : '#ec4899' }}
+                        />
+                        <span className="text-sm text-slate-100 truncate flex-1">
+                          {p.firstName} {p.lastName}
+                        </span>
+                        {year && <span className="text-xs text-slate-500 shrink-0">{year}</span>}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-500 hidden sm:block">
+            {layout.reachable.size} of {totalPeople} shown
+          </div>
         </div>
       </div>
 

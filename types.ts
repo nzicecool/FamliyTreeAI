@@ -41,7 +41,7 @@ export interface D3NodeDatum {
   children?: D3NodeDatum[];
 }
 
-export type ViewMode = 'editor' | 'tree' | 'smart-add' | 'invites';
+export type ViewMode = 'editor' | 'tree' | 'smart-add' | 'invites' | 'narrative';
 
 export interface User {
   id: string;
