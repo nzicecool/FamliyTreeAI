@@ -9,7 +9,7 @@ This folder contains the static landing page for FamilyTreeAI, designed to be se
 3. Under **Build and deployment**, set:
    - **Source**: *Deploy from a branch*
    - **Branch**: `main` and folder `/docs`
-4. Click **Save**. Your site will be live at `https://<your-username>.github.io/<repo-name>/` within a minute.
+4. Click **Save**. Your site will be live at `https://nzicecool.github.io/FamliyTreeAI/` within a minute.
 
 ## Customize
 
