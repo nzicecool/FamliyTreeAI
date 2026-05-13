@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { Person, Gender } from '../types';
 import { aiService } from '../services/aiService';
+import { DocumentsSection } from './DocumentsSection';
 import { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon, Network } from 'lucide-react';
 
 interface EditorPanelProps {
@@ -358,6 +359,9 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
            />
            {bioError && <p className="text-xs text-red-400 mt-1">{bioError}</p>}
         </div>
+
+        {/* Documents — only for saved persons */}
+        {person && <DocumentsSection personId={person.id} />}
 
         {/* Actions */}
         <div className="pt-4 flex items-center gap-3 border-t border-slate-700">

@@ -41,6 +41,36 @@ export interface D3NodeDatum {
   children?: D3NodeDatum[];
 }
 
+export enum DocumentType {
+  BirthCertificate = 'birth_certificate',
+  MarriageCertificate = 'marriage_certificate',
+  DeathCertificate = 'death_certificate',
+  Passport = 'passport',
+  CensusRecord = 'census_record',
+  Photograph = 'photograph',
+  Other = 'other',
+}
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  [DocumentType.BirthCertificate]: 'Birth Certificate',
+  [DocumentType.MarriageCertificate]: 'Marriage Certificate',
+  [DocumentType.DeathCertificate]: 'Death Certificate',
+  [DocumentType.Passport]: 'Passport',
+  [DocumentType.CensusRecord]: 'Census Record',
+  [DocumentType.Photograph]: 'Photograph',
+  [DocumentType.Other]: 'Other',
+};
+
+export interface PersonDocument {
+  id: string;
+  personId: string;
+  name: string;
+  docType: DocumentType;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export type ViewMode = 'editor' | 'tree' | 'smart-add' | 'invites' | 'narrative' | 'settings';
 
 export interface User {

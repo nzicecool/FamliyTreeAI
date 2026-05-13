@@ -66,6 +66,19 @@ async function ensureSchema() {
       kimi_key TEXT,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS documents (
+      id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      person_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      doc_type TEXT NOT NULL DEFAULT 'other',
+      mime_type TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      file_data TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (id)
+    );
+    CREATE INDEX IF NOT EXISTS documents_person_idx ON documents(user_id, person_id);
   `);
 }
 
@@ -581,6 +594,115 @@ async function startServer() {
     } catch (error: any) {
       console.error('Clear key error:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ----- Documents -----
+  const ALLOWED_DOC_TYPES = [
+    'birth_certificate', 'marriage_certificate', 'death_certificate',
+    'passport', 'census_record', 'photograph', 'other',
+  ];
+
+  app.get('/api/person/:personId/documents', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { personId } = req.params;
+    try {
+      const result = await pool.query(
+        `SELECT id, person_id, name, doc_type, mime_type, file_size, created_at
+         FROM documents WHERE user_id = $1 AND person_id = $2
+         ORDER BY created_at DESC`,
+        [userId, personId],
+      );
+      res.json(result.rows.map(r => ({
+        id: r.id,
+        personId: r.person_id,
+        name: r.name,
+        docType: r.doc_type,
+        mimeType: r.mime_type,
+        fileSize: r.file_size,
+        createdAt: r.created_at,
+      })));
+    } catch (err: any) {
+      console.error('List documents error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/person/:personId/document', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { personId } = req.params;
+    const { name, docType, mimeType, fileSize, fileData } = req.body || {};
+
+    if (!name || !mimeType || !fileData) {
+      return res.status(400).json({ error: 'name, mimeType, and fileData are required.' });
+    }
+    if (!ALLOWED_DOC_TYPES.includes(docType)) {
+      return res.status(400).json({ error: 'Invalid doc_type.' });
+    }
+    const sizeBytes = typeof fileSize === 'number' ? fileSize : 0;
+    if (sizeBytes > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File exceeds 5 MB limit.' });
+    }
+    // Verify person belongs to this user
+    const personCheck = await pool.query(
+      'SELECT id FROM people WHERE user_id = $1 AND id = $2',
+      [userId, personId],
+    );
+    if (personCheck.rowCount === 0) {
+      return res.status(404).json({ error: 'Person not found.' });
+    }
+    try {
+      const id = crypto.randomUUID();
+      await pool.query(
+        `INSERT INTO documents (id, user_id, person_id, name, doc_type, mime_type, file_size, file_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [id, userId, personId, name, docType, mimeType, sizeBytes, fileData],
+      );
+      res.json({
+        id,
+        personId,
+        name,
+        docType,
+        mimeType,
+        fileSize: sizeBytes,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error('Upload document error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/document/:docId', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { docId } = req.params;
+    try {
+      const result = await pool.query(
+        'SELECT name, mime_type, file_data FROM documents WHERE id = $1 AND user_id = $2',
+        [docId, userId],
+      );
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Document not found.' });
+      const row = result.rows[0];
+      res.json({ name: row.name, mimeType: row.mime_type, fileData: row.file_data });
+    } catch (err: any) {
+      console.error('Get document error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/document/:docId', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { docId } = req.params;
+    try {
+      const result = await pool.query(
+        'DELETE FROM documents WHERE id = $1 AND user_id = $2',
+        [docId, userId],
+      );
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Document not found.' });
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error('Delete document error:', err);
+      res.status(500).json({ error: err.message });
     }
   });
 
