@@ -34,6 +34,7 @@ Tables in the development database (created on first setup):
 - `people (user_id, id, first_name, last_name, gender, birth_date, birth_place, death_date, death_place, bio, photo, father_id, mother_id, spouse_ids jsonb, children_ids jsonb, updated_at)` — PK `(user_id, id)`. One row per person, scoped to a Clerk user.
 - `tree_meta (user_id PK, root_id, updated_at)` — Per-user root of the tree.
 - `invites (email PK, invited_by_user_id, invited_by_name, status, created_at)` — Pending/accepted invitations.
+- `marriages (id PK, user_id, person1_id, person2_id, marriage_date, marriage_place, end_date, end_place, status, notes, created_at)` — Marriage records per couple. Status: married | divorced | widowed | separated | annulled. Creating/deleting a marriage automatically syncs `spouse_ids` on both persons.
 - `documents (id PK, user_id, person_id, name, doc_type, mime_type, file_size, file_data, created_at)` — Documents attached to a person (base64-encoded). Max 5 MB per file. Scoped to `(user_id, person_id)`.
 
 ## API Endpoints (all require a Clerk Bearer token)
@@ -42,6 +43,11 @@ Tables in the development database (created on first setup):
 - `POST   /api/tree/save-person` — upsert a person
 - `DELETE /api/tree/delete-person/:id` — remove a person
 - `POST   /api/tree/save-meta` — set the tree's `rootId`
+- `GET    /api/marriages` — list all marriages for current user
+- `GET    /api/person/:personId/marriages` — list marriages involving a person
+- `POST   /api/marriage` — create a marriage record (syncs spouseIds on both persons)
+- `PUT    /api/marriage/:id` — update marriage details (dates, status, notes)
+- `DELETE /api/marriage/:id` — remove a marriage (unlinks spouseIds if no other marriage remains)
 - `GET    /api/person/:personId/documents` — list documents for a person (no file data)
 - `POST   /api/person/:personId/document` — attach a document (PDF or image, base64 body, max 5 MB)
 - `GET    /api/document/:docId` — fetch document including file data for download/preview

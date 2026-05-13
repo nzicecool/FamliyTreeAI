@@ -41,6 +41,41 @@ export interface D3NodeDatum {
   children?: D3NodeDatum[];
 }
 
+export enum MarriageStatus {
+  Married = 'married',
+  Divorced = 'divorced',
+  Widowed = 'widowed',
+  Separated = 'separated',
+  Annulled = 'annulled',
+}
+
+export const MARRIAGE_STATUS_LABELS: Record<MarriageStatus, string> = {
+  [MarriageStatus.Married]: 'Married',
+  [MarriageStatus.Divorced]: 'Divorced',
+  [MarriageStatus.Widowed]: 'Widowed',
+  [MarriageStatus.Separated]: 'Separated',
+  [MarriageStatus.Annulled]: 'Annulled',
+};
+
+export const MARRIAGE_STATUS_ENDED = new Set<MarriageStatus>([
+  MarriageStatus.Divorced,
+  MarriageStatus.Widowed,
+  MarriageStatus.Annulled,
+]);
+
+export interface Marriage {
+  id: string;
+  person1Id: string;
+  person2Id: string;
+  marriageDate?: string;
+  marriagePlace?: string;
+  endDate?: string;
+  endPlace?: string;
+  status: MarriageStatus;
+  notes?: string;
+  createdAt?: string;
+}
+
 export enum DocumentType {
   BirthCertificate = 'birth_certificate',
   MarriageCertificate = 'marriage_certificate',

@@ -3,7 +3,8 @@ import { useAuth } from '@clerk/clerk-react';
 import { Person, Gender } from '../types';
 import { aiService } from '../services/aiService';
 import { DocumentsSection } from './DocumentsSection';
-import { Wand2, Save, X, Loader2, Heart, Trash2, Camera, Upload, Image as ImageIcon, Network } from 'lucide-react';
+import { MarriagesSection } from './MarriagesSection';
+import { Wand2, Save, X, Loader2, Trash2, Camera, Upload, Network } from 'lucide-react';
 
 interface EditorPanelProps {
   person: Person | null;
@@ -12,9 +13,10 @@ interface EditorPanelProps {
   onSetRoot: (id: string) => void;
   onCancel: () => void;
   allPeople: Person[];
+  onMarriagesChanged: () => void;
 }
 
-export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDelete, onSetRoot, onCancel, allPeople }) => {
+export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDelete, onSetRoot, onCancel, allPeople, onMarriagesChanged }) => {
   const { getToken } = useAuth();
   const [bioError, setBioError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Person>>({
@@ -87,19 +89,6 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
     }
   };
 
-  const addSpouse = (spouseId: string) => {
-    if (!spouseId) return;
-    const currentSpouses = formData.spouseIds || [];
-    if (!currentSpouses.includes(spouseId)) {
-        handleChange('spouseIds', [...currentSpouses, spouseId]);
-    }
-  };
-
-  const removeSpouse = (spouseId: string) => {
-    const currentSpouses = formData.spouseIds || [];
-    handleChange('spouseIds', currentSpouses.filter(id => id !== spouseId));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.firstName && formData.lastName) {
@@ -112,12 +101,6 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
         onSave(cleanData as Person);
     }
   };
-
-  // Filter potential spouses (exclude self and already selected)
-  const availableSpouses = allPeople.filter(p => 
-      p.id !== formData.id && 
-      !formData.spouseIds?.includes(p.id)
-  );
 
   return (
     <div className="h-full bg-slate-800 border-l border-slate-700 p-6 overflow-y-auto no-scrollbar">
@@ -306,36 +289,14 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
             </div>
         </div>
 
-        <div className="space-y-3">
-            <label className="block text-xs font-medium text-slate-400">Spouses / Partners</label>
-            <div className="flex gap-2">
-               <select 
-                  className="flex-1 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white outline-none text-sm"
-                  onChange={(e) => {
-                      addSpouse(e.target.value);
-                      e.target.value = "";
-                  }}
-               >
-                  <option value="">+ Add Spouse...</option>
-                  {availableSpouses.map(p => (
-                      <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
-                  ))}
-               </select>
-            </div>
-            <div className="flex flex-wrap gap-2">
-                {formData.spouseIds?.map(sid => {
-                    const spouse = allPeople.find(p => p.id === sid);
-                    if (!spouse) return null;
-                    return (
-                        <div key={sid} className="bg-slate-700 text-slate-200 px-2 py-1 rounded text-sm flex items-center gap-2">
-                            <Heart size={12} className="text-pink-400" />
-                            {spouse.firstName} {spouse.lastName}
-                            <button type="button" onClick={() => removeSpouse(sid)} className="hover:text-white"><X size={14}/></button>
-                        </div>
-                    )
-                })}
-            </div>
-        </div>
+        {/* Marriages — managed via separate records; only shown for saved persons */}
+        {person && (
+          <MarriagesSection
+            personId={person.id}
+            allPeople={allPeople}
+            onChanged={onMarriagesChanged}
+          />
+        )}
 
         {/* Biography */}
         <div>

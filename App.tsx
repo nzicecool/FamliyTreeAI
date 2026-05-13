@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { NAV_ITEMS } from './constants';
-import { TreeData, Person, ViewMode, Gender, User } from './types';
+import { TreeData, Person, ViewMode, Gender, User, Marriage } from './types';
 import { TreeVisualizer } from './components/TreeVisualizer';
 import { EditorPanel } from './components/EditorPanel';
 import { SmartAdd } from './components/SmartAdd';
@@ -9,6 +9,7 @@ import { InviteManager } from './components/InviteManager';
 import { NarrativeView } from './components/NarrativeView';
 import { SettingsView } from './components/SettingsView';
 import { storageService } from './services/storageService';
+import { marriageService } from './services/marriageService';
 import { generateGedcom } from './services/gedcomService';
 import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
@@ -69,6 +70,7 @@ function AppContent() {
   
   // Tree State
   const [treeData, setTreeData] = useState<TreeData | null>(null);
+  const [marriages, setMarriages] = useState<Marriage[]>([]);
   const [activeView, setActiveView] = useState<ViewMode>('tree');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -111,10 +113,28 @@ function AppContent() {
 
   const loadData = async () => {
     try {
-      const data = await storageService.loadTree(getToken);
+      const [data, marriageList] = await Promise.all([
+        storageService.loadTree(getToken),
+        marriageService.listAll(getToken).catch(() => []),
+      ]);
       setTreeData(data);
+      setMarriages(marriageList);
     } catch (e) {
       console.error("Failed to load tree data", e);
+    }
+  };
+
+  const handleMarriagesChanged = async () => {
+    // Reload both tree (spouseIds updated server-side) and marriages list.
+    try {
+      const [data, marriageList] = await Promise.all([
+        storageService.loadTree(getToken),
+        marriageService.listAll(getToken).catch(() => []),
+      ]);
+      setTreeData(data);
+      setMarriages(marriageList);
+    } catch (e) {
+      console.error("Failed to reload after marriage change", e);
     }
   };
 
@@ -464,6 +484,7 @@ function AppContent() {
              {activeView === 'tree' && (
                  <TreeVisualizer
                     data={treeData}
+                    marriages={marriages}
                     onSelectPerson={handleSelectPerson}
                     onSetRoot={handleSetRoot}
                  />
@@ -478,6 +499,7 @@ function AppContent() {
                         onSetRoot={handleSetRoot}
                         onCancel={() => setActiveView('tree')}
                         allPeople={peopleList}
+                        onMarriagesChanged={handleMarriagesChanged}
                     />
                  </div>
              )}

@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import * as d3 from 'd3';
-import { TreeData, Person } from '../types';
+import { TreeData, Person, Marriage, MARRIAGE_STATUS_ENDED, MarriageStatus } from '../types';
 import { ArrowUp, ArrowDown, Home, ChevronRight, UserPlus, Users, ZoomIn, ZoomOut, Maximize2, RotateCcw, Search, X } from 'lucide-react';
 
 type TreeDirection = 'descendants' | 'ancestors';
 
 interface TreeVisualizerProps {
   data: TreeData;
+  marriages?: Marriage[];
   onSelectPerson: (id: string) => void;
   onSetRoot: (id: string) => void;
 }
@@ -182,7 +183,7 @@ const PersonNode: React.FC<PersonNodeProps> = ({ x, y, name, attrs, onSelect, on
   );
 };
 
-export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPerson, onSetRoot }) => {
+export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, marriages = [], onSelectPerson, onSetRoot }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const svgRef = React.useRef<SVGSVGElement>(null);
   const zoomBehaviorRef = React.useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -413,12 +414,34 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       })
       .filter(Boolean) as Array<{ d: string; parentName: string; childName: string; key: string }>;
 
-    const spouseLinks: Array<{ x1: number; y1: number; x2: number; y2: number; key: string }> = [];
+    // Build a lookup: sorted pair key → whether the marriage is ended.
+    // If multiple marriages exist for a pair, the relationship is "active" if
+    // any of them is not in an ended state.
+    const marriageEndedMap = new Map<string, boolean>();
+    marriages.forEach(m => {
+      const key = [m.person1Id, m.person2Id].sort().join('|');
+      const ended = MARRIAGE_STATUS_ENDED.has(m.status as MarriageStatus);
+      const current = marriageEndedMap.get(key);
+      // If any marriage is active, mark as not ended.
+      if (current === undefined) {
+        marriageEndedMap.set(key, ended);
+      } else if (!ended) {
+        marriageEndedMap.set(key, false);
+      }
+    });
+
+    const pairEnded = (id1: string, id2: string): boolean => {
+      const key = [id1, id2].sort().join('|');
+      // If we have explicit marriage data, use it. Otherwise default to active.
+      return marriageEndedMap.has(key) ? marriageEndedMap.get(key)! : false;
+    };
+
+    const spouseLinks: Array<{ x1: number; y1: number; x2: number; y2: number; key: string; isEnded: boolean }> = [];
     layout.spousePairs.forEach(pair => {
       const a = positions.get(pair.aId);
       const b = positions.get(pair.bId);
       if (!a || !b) return;
-      spouseLinks.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: `sp-${pair.aId}-${pair.bId}` });
+      spouseLinks.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: `sp-${pair.aId}-${pair.bId}`, isEnded: pairEnded(pair.aId, pair.bId) });
     });
     layout.attachedSpouses.forEach(sp => {
       const target = positions.get(sp.id);
@@ -426,7 +449,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
       sp.partnerIds.forEach(pid => {
         const src = positions.get(pid);
         if (!src) return;
-        spouseLinks.push({ x1: src.x, y1: src.y, x2: target.x, y2: target.y, key: `sp-${pid}-${sp.id}` });
+        spouseLinks.push({ x1: src.x, y1: src.y, x2: target.x, y2: target.y, key: `sp-${pid}-${sp.id}`, isEnded: pairEnded(pid, sp.id) });
       });
     });
 
@@ -705,7 +728,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
                 </g>
               ))}
 
-              {/* Spouse links */}
+              {/* Spouse links — solid pink = active, dashed grey = ended */}
               {view.spouseLinks.map(s => (
                 <g key={s.key}>
                   <line
@@ -713,12 +736,12 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, onSelectPe
                     y1={s.y1}
                     x2={s.x2}
                     y2={s.y2}
-                    stroke="#ec4899"
-                    strokeWidth="2"
-                    strokeDasharray="4 3"
-                    opacity={0.85}
+                    stroke={s.isEnded ? '#64748b' : '#ec4899'}
+                    strokeWidth={s.isEnded ? 1.5 : 2}
+                    strokeDasharray={s.isEnded ? '5 4' : undefined}
+                    opacity={s.isEnded ? 0.55 : 0.9}
                   />
-                  <title>Spouses</title>
+                  <title>{s.isEnded ? 'Former spouse' : 'Spouse'}</title>
                 </g>
               ))}
 

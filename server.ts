@@ -66,6 +66,22 @@ async function ensureSchema() {
       kimi_key TEXT,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS marriages (
+      id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      person1_id TEXT NOT NULL,
+      person2_id TEXT NOT NULL,
+      marriage_date TEXT,
+      marriage_place TEXT,
+      end_date TEXT,
+      end_place TEXT,
+      status TEXT NOT NULL DEFAULT 'married',
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (id)
+    );
+    CREATE INDEX IF NOT EXISTS marriages_p1_idx ON marriages(user_id, person1_id);
+    CREATE INDEX IF NOT EXISTS marriages_p2_idx ON marriages(user_id, person2_id);
     CREATE TABLE IF NOT EXISTS documents (
       id TEXT NOT NULL,
       user_id TEXT NOT NULL,
@@ -594,6 +610,150 @@ async function startServer() {
     } catch (error: any) {
       console.error('Clear key error:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ----- Marriage helpers -----
+  const VALID_MARRIAGE_STATUSES = ['married', 'divorced', 'widowed', 'separated', 'annulled'];
+
+  const rowToMarriage = (r: any) => ({
+    id: r.id,
+    person1Id: r.person1_id,
+    person2Id: r.person2_id,
+    marriageDate: r.marriage_date ?? undefined,
+    marriagePlace: r.marriage_place ?? undefined,
+    endDate: r.end_date ?? undefined,
+    endPlace: r.end_place ?? undefined,
+    status: r.status,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at,
+  });
+
+  async function addSpouseLink(userId: string, personId: string, spouseId: string) {
+    const res = await pool.query('SELECT spouse_ids FROM people WHERE user_id = $1 AND id = $2', [userId, personId]);
+    if (res.rowCount === 0) return;
+    const ids: string[] = res.rows[0].spouse_ids ?? [];
+    if (!ids.includes(spouseId)) {
+      await pool.query('UPDATE people SET spouse_ids = $1 WHERE user_id = $2 AND id = $3',
+        [JSON.stringify([...ids, spouseId]), userId, personId]);
+    }
+  }
+
+  async function removeSpouseLink(userId: string, personId: string, spouseId: string) {
+    const res = await pool.query('SELECT spouse_ids FROM people WHERE user_id = $1 AND id = $2', [userId, personId]);
+    if (res.rowCount === 0) return;
+    const ids: string[] = (res.rows[0].spouse_ids ?? []).filter((id: string) => id !== spouseId);
+    await pool.query('UPDATE people SET spouse_ids = $1 WHERE user_id = $2 AND id = $3',
+      [JSON.stringify(ids), userId, personId]);
+  }
+
+  // ----- Marriage routes -----
+  app.get('/api/marriages', authenticate, async (req: any, res) => {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM marriages WHERE user_id = $1 ORDER BY created_at ASC',
+        [req.auth.userId],
+      );
+      res.json(result.rows.map(rowToMarriage));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/person/:personId/marriages', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { personId } = req.params;
+    try {
+      const result = await pool.query(
+        `SELECT * FROM marriages
+         WHERE user_id = $1 AND (person1_id = $2 OR person2_id = $2)
+         ORDER BY marriage_date ASC NULLS LAST, created_at ASC`,
+        [userId, personId],
+      );
+      res.json(result.rows.map(rowToMarriage));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/marriage', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { person1Id, person2Id, marriageDate, marriagePlace, endDate, endPlace, status = 'married', notes } = req.body || {};
+    if (!person1Id || !person2Id) return res.status(400).json({ error: 'person1Id and person2Id are required.' });
+    if (person1Id === person2Id) return res.status(400).json({ error: 'A person cannot marry themselves.' });
+    if (!VALID_MARRIAGE_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status.' });
+    // Check both persons belong to this user
+    const pCheck = await pool.query(
+      'SELECT id FROM people WHERE user_id = $1 AND id = ANY($2::text[])',
+      [userId, [person1Id, person2Id]],
+    );
+    if (pCheck.rowCount !== 2) return res.status(404).json({ error: 'One or both persons not found.' });
+    try {
+      const id = crypto.randomUUID();
+      await pool.query(
+        `INSERT INTO marriages (id, user_id, person1_id, person2_id, marriage_date, marriage_place, end_date, end_place, status, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [id, userId, person1Id, person2Id, marriageDate || null, marriagePlace || null,
+         endDate || null, endPlace || null, status, notes || null],
+      );
+      // Sync spouseIds on both persons
+      await addSpouseLink(userId, person1Id, person2Id);
+      await addSpouseLink(userId, person2Id, person1Id);
+      const row = await pool.query('SELECT * FROM marriages WHERE id = $1', [id]);
+      res.json(rowToMarriage(row.rows[0]));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/marriage/:id', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { id } = req.params;
+    const { marriageDate, marriagePlace, endDate, endPlace, status, notes } = req.body || {};
+    if (status && !VALID_MARRIAGE_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status.' });
+    try {
+      const existing = await pool.query('SELECT id FROM marriages WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (existing.rowCount === 0) return res.status(404).json({ error: 'Marriage not found.' });
+      await pool.query(
+        `UPDATE marriages SET
+           marriage_date = COALESCE($1, marriage_date),
+           marriage_place = COALESCE($2, marriage_place),
+           end_date = $3,
+           end_place = $4,
+           status = COALESCE($5, status),
+           notes = $6
+         WHERE id = $7 AND user_id = $8`,
+        [marriageDate || null, marriagePlace || null, endDate ?? null, endPlace ?? null,
+         status || null, notes ?? null, id, userId],
+      );
+      const row = await pool.query('SELECT * FROM marriages WHERE id = $1', [id]);
+      res.json(rowToMarriage(row.rows[0]));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/marriage/:id', authenticate, async (req: any, res) => {
+    const userId = req.auth.userId;
+    const { id } = req.params;
+    try {
+      const row = await pool.query('SELECT * FROM marriages WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (row.rowCount === 0) return res.status(404).json({ error: 'Marriage not found.' });
+      const { person1_id, person2_id } = row.rows[0];
+      await pool.query('DELETE FROM marriages WHERE id = $1', [id]);
+      // Only remove spouse link if no other marriage exists between the same pair
+      const remaining = await pool.query(
+        `SELECT id FROM marriages WHERE user_id = $1
+         AND ((person1_id = $2 AND person2_id = $3) OR (person1_id = $3 AND person2_id = $2))`,
+        [userId, person1_id, person2_id],
+      );
+      if (remaining.rowCount === 0) {
+        await removeSpouseLink(userId, person1_id, person2_id);
+        await removeSpouseLink(userId, person2_id, person1_id);
+      }
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
