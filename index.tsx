@@ -2,6 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ClerkProvider, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
+import { captureInvitation } from './services/familyService';
+
+captureInvitation();
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -17,8 +20,8 @@ function Root() {
   return (
     <ClerkProvider
       publishableKey={PUBLISHABLE_KEY}
-      signInUrl="/"
-      signUpUrl="/"
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >

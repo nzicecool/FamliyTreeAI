@@ -1,236 +1,198 @@
-import React, { useState } from 'react';
-import { Network, ArrowRight, Loader2, Mail, Github } from 'lucide-react';
-import { useSignIn } from '@clerk/clerk-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { SignIn, SignUp, useAuth } from '@clerk/clerk-react';
+import { ArrowRight, Network } from 'lucide-react';
+import { pendingInvitationToken } from '../services/familyService';
 
 interface LoginScreenProps {
   onLogin: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const { isLoaded, signIn, setActive } = useSignIn();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Form States
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [verifying, setVerifying] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
+  const notified = useRef(false);
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>(
+    window.location.pathname === '/sign-up' ? 'sign-up' : 'sign-in',
+  );
 
-  const handleGoogleLogin = async () => {
-    if (!isLoaded) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/',
-      });
-    } catch (e: any) {
-      console.error(e);
-      setError(e.errors?.[0]?.message || 'An error occurred during login.');
-      setLoading(false);
+  useEffect(() => {
+    const syncRoute = () => setMode(window.location.pathname === '/sign-up' ? 'sign-up' : 'sign-in');
+    window.addEventListener('popstate', syncRoute);
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !notified.current) {
+      notified.current = true;
+      onLogin();
     }
+  }, [isLoaded, isSignedIn, onLogin]);
+
+  const selectMode = (nextMode: 'sign-in' | 'sign-up') => {
+    setMode(nextMode);
+    const path = nextMode === 'sign-up' ? '/sign-up' : '/sign-in';
+    if (window.location.pathname !== path) window.history.pushState(null, '', path);
   };
 
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoaded) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await signIn.create({
-        identifier: email,
-      });
-      const firstFactor = signIn.supportedFirstFactors.find(f => f.strategy === 'email_code');
-      if (firstFactor && 'emailAddressId' in firstFactor) {
-        await signIn.prepareFirstFactor({
-          strategy: 'email_code',
-          emailAddressId: (firstFactor as any).emailAddressId,
-        });
-        setVerifying(true);
-      } else {
-        throw new Error('Email code strategy not available');
-      }
-    } catch (e: any) {
-      setError(e.errors?.[0]?.message || 'Failed to send code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoaded) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await signIn.attemptFirstFactor({
-        strategy: 'email_code',
-        code,
-      });
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        onLogin();
-      }
-    } catch (e: any) {
-      setError(e.errors?.[0]?.message || 'Invalid code');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const externalLoginUrl = new URL(mode === 'sign-up' ? '/sign-up' : '/sign-in', window.location.origin);
+  const invite = pendingInvitationToken();
+  if (invite) externalLoginUrl.searchParams.set('invite', invite);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-2 relative overflow-hidden">
-      {/* GitHub Link */}
-      <a 
-        href="https://github.com/nzicecool/FamliyTreeAI" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="absolute top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all backdrop-blur-md group"
-      >
-        <Github size={20} />
-        <span className="text-sm font-medium">View on GitHub</span>
-      </a>
-
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[100px]"></div>
-         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* Left Side: Mission & Image */}
-      <div className="z-10 flex flex-col justify-center p-8 lg:p-16 xl:p-24 order-2 lg:order-1">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-medium mb-6">
+    <main className="min-h-[100dvh] bg-slate-950 text-slate-100 lg:grid lg:grid-cols-[1.05fr_.95fr]">
+      <section className="relative flex min-h-[35vh] flex-col justify-center overflow-hidden px-6 py-12 sm:px-10 lg:min-h-[100dvh] lg:px-16 xl:px-24">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-40 top-10 h-96 w-96 rounded-full bg-brand-600/10 blur-3xl" />
+          <div className="absolute -bottom-48 right-0 h-[30rem] w-[30rem] rounded-full bg-cyan-400/[.07] blur-3xl" />
+          <div className="absolute inset-y-0 right-0 hidden w-px bg-gradient-to-b from-transparent via-slate-700/80 to-transparent lg:block" />
+        </div>
+        <div className="relative z-10 mx-auto w-full max-w-2xl">
+          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-brand-400/20 bg-brand-400/[.07] px-4 py-2 text-xs font-semibold uppercase tracking-[.16em] text-brand-200">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-300 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-300" />
             </span>
-            Open Source & Free Forever
+            Open source · Free forever
           </div>
-          
-          <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-            Your family history <br />
-            <span className="text-brand-500">belongs to you</span>.
-          </h2>
-          
-          <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-            Born out of frustration with exorbitant fees, FamilyTreeAI is a labor of love designed to put your heritage back in your own hands. Capture, preserve, and explore your family tree without the premium price tag.
+          <h1 className="max-w-xl text-4xl font-semibold leading-[1.08] tracking-[-.045em] text-white sm:text-5xl xl:text-6xl">
+            Your family history
+            <br />
+            <span className="text-brand-400">belongs to you.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
+            FamilyTreeAI helps relatives preserve the stories they share—without exposing private records.
+            Build a history together, on your terms.
           </p>
-
-          <div className="relative group rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <img 
-              src="https://github.com/user-attachments/assets/214e3ea5-8511-448e-9ad8-17911b6850b0" 
-              alt="FamilyTreeAI Preview" 
-              className="w-full h-auto transform group-hover:scale-105 transition-transform duration-700"
+          <div className="mt-10 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/70 shadow-2xl shadow-black/20">
+            <img
+              src="https://github.com/user-attachments/assets/214e3ea5-8511-448e-9ad8-17911b6850b0"
+              alt="A preview of the FamilyTreeAI family history workspace"
+              className="block h-auto w-full"
               referrerPolicy="no-referrer"
             />
+            <div className="flex items-center justify-between gap-4 border-t border-slate-700/70 px-5 py-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-100">Built for the people in your story</p>
+                <p className="mt-1 text-xs text-slate-400">Private by default. Shared by choice.</p>
+              </div>
+              <Network aria-hidden="true" className="shrink-0 text-brand-300" size={22} />
+            </div>
           </div>
-
+          <a
+            href="https://github.com/nzicecool/FamliyTreeAI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300"
+          >
+            Explore the open-source project <ArrowRight size={15} aria-hidden="true" />
+          </a>
         </div>
-      </div>
+      </section>
 
-      {/* Right Side: Login Form */}
-      <div className="z-10 flex items-center justify-center p-8 order-1 lg:order-2">
-        <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-brand-600/20">
-              <Network size={32} className="text-white" />
+      <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:min-h-[100dvh]">
+        <div className="w-full max-w-[28rem]">
+          <div className="mb-7 text-center lg:text-left">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-300/20 bg-brand-400/10 text-brand-300 lg:mx-0">
+              <Network size={23} aria-hidden="true" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">FamilyTreeAI</h1>
-            <p className="text-slate-400">The next generation of genealogy.</p>
+            <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-300">FamilyTreeAI</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+              {mode === 'sign-in' ? 'Welcome back' : 'Start your family archive'}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {mode === 'sign-in' ? 'Sign in to pick up where your family left off.' : 'Create an account to bring your family history together.'}
+            </p>
           </div>
-
-          <div className="space-y-6">
-            {/* Google Auth */}
+          <div className="mb-6 grid grid-cols-2 rounded-xl border border-slate-700 bg-slate-900/70 p-1" aria-label="Choose account action">
             <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full bg-white hover:bg-slate-50 text-slate-900 font-semibold py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-3 group relative overflow-hidden"
+              type="button"
+              onClick={() => selectMode('sign-in')}
+              aria-current={mode === 'sign-in' ? 'page' : undefined}
+              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300 ${mode === 'sign-in' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
             >
-              {loading && !verifying ? (
-                 <Loader2 size={20} className="animate-spin text-slate-600" />
-              ) : (
-                <>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  <span>Continue with Google</span>
-                  <ArrowRight size={18} className="opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all text-slate-400" />
-                </>
-              )}
+              Sign in
             </button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-800"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-900 px-2 text-slate-500">Or email code</span>
-              </div>
-            </div>
-
-            {!verifying ? (
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-brand-500/50 outline-none transition-all"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={20} className="animate-spin" /> : 'Send Code'}
-                </button>
-              </form>
+            <button
+              type="button"
+              onClick={() => selectMode('sign-up')}
+              aria-current={mode === 'sign-up' ? 'page' : undefined}
+              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300 ${mode === 'sign-up' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+            >
+              Sign up
+            </button>
+          </div>
+          <p className="mb-4 text-center text-xs leading-5 text-slate-400">
+            Testing Google sign-in?{' '}
+            <a href={externalLoginUrl.toString()} target="_blank" rel="noopener noreferrer" className="text-brand-300 underline underline-offset-2">
+              Open in a separate browser tab
+            </a>.
+          </p>
+          <div className="min-h-[25rem]">
+            {mode === 'sign-in' ? (
+              <SignIn
+                routing="hash"
+                signInUrl="/sign-in"
+                signUpUrl="/sign-up"
+                forceRedirectUrl="/"
+                appearance={{
+                  variables: {
+                    colorBackground: '#111827',
+                    colorText: '#f1f5f9',
+                    colorTextSecondary: '#94a3b8',
+                    colorPrimary: '#0284c7',
+                    colorInputBackground: '#020617',
+                    colorInputText: '#f1f5f9',
+                    borderRadius: '0.8rem',
+                  },
+                  elements: {
+                    card: 'bg-slate-900 border border-slate-700 shadow-xl',
+                    headerTitle: 'text-white',
+                    headerSubtitle: 'text-slate-400',
+                    formFieldLabel: 'text-slate-300',
+                    formFieldInput: 'border-slate-700',
+                    footerActionLink: 'text-brand-300 hover:text-brand-200',
+                    dividerLine: 'bg-slate-700',
+                    dividerText: 'text-slate-500',
+                    socialButtonsBlockButton: { backgroundColor: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1' },
+                    socialButtonsBlockButtonText: { color: '#0f172a' },
+                  },
+                }}
+              />
             ) : (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-center tracking-[0.5em] font-mono text-xl focus:ring-2 focus:ring-brand-500/50 outline-none transition-all"
-                    value={code}
-                    onChange={e => setCode(e.target.value)}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={20} className="animate-spin" /> : 'Verify & Sign In'}
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setVerifying(false)}
-                  className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  Back to email
-                </button>
-              </form>
+              <SignUp
+                routing="hash"
+                signInUrl="/sign-in"
+                forceRedirectUrl="/"
+                appearance={{
+                  variables: {
+                    colorBackground: '#111827',
+                    colorText: '#f1f5f9',
+                    colorTextSecondary: '#94a3b8',
+                    colorPrimary: '#0284c7',
+                    colorInputBackground: '#020617',
+                    colorInputText: '#f1f5f9',
+                    borderRadius: '0.8rem',
+                  },
+                  elements: {
+                    card: 'bg-slate-900 border border-slate-700 shadow-xl',
+                    headerTitle: 'text-white',
+                    headerSubtitle: 'text-slate-400',
+                    formFieldLabel: 'text-slate-300',
+                    formFieldInput: 'border-slate-700',
+                    footerActionLink: 'text-brand-300 hover:text-brand-200',
+                    dividerLine: 'bg-slate-700',
+                    dividerText: 'text-slate-500',
+                    socialButtonsBlockButton: { backgroundColor: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1' },
+                    socialButtonsBlockButtonText: { color: '#0f172a' },
+                  },
+                }}
+              />
             )}
           </div>
-
-          <div className="text-xs text-slate-500 text-center mt-8">
-            By continuing, you agree to our <span className="underline cursor-pointer hover:text-slate-400">Terms</span> and <span className="underline cursor-pointer hover:text-slate-400">Privacy Policy</span>.
-          </div>
+          <p className="mt-6 text-center text-xs leading-5 text-slate-500">
+            Your family’s records stay private unless you choose to share them.
+          </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };

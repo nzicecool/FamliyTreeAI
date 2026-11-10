@@ -1,11 +1,13 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NAV_ITEMS } from './constants';
 import { TreeData, Person, ViewMode, Gender, User, Marriage } from './types';
 import { TreeVisualizer } from './components/TreeVisualizer';
 import { EditorPanel } from './components/EditorPanel';
 import { SmartAdd } from './components/SmartAdd';
 import { LoginScreen } from './components/LoginScreen';
-import { InviteManager } from './components/InviteManager';
+import { FamilyManager } from './components/FamilyManager';
+import { FamilyGate } from './components/FamilyGate';
+import { Family } from './familyTypes';
 import { NarrativeView } from './components/NarrativeView';
 import { SettingsView } from './components/SettingsView';
 import { storageService } from './services/storageService';
@@ -61,12 +63,12 @@ class ErrorBoundary extends (React.Component as any) {
   }
 }
 
-function AppContent() {
-  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+const FamilyTreeApp: React.FC<{
+  user: User; family: Family; onFamilyChanged: () => Promise<void>; onBrowse: () => void;
+}> = ({ user, family, onFamilyChanged, onBrowse }) => {
   const { getToken } = useAuth();
   const { signOut } = useClerk();
-  
-  const [user, setUser] = useState<User | null>(null);
+  const [dataError, setDataError] = useState('');
   
   // Tree State
   const [treeData, setTreeData] = useState<TreeData | null>(null);
@@ -85,42 +87,30 @@ function AppContent() {
     }
   }, [isSidebarOpen]);
 
-  // Map Clerk User to App User
   useEffect(() => {
-    if (isLoaded && isSignedIn && clerkUser) {
-      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
-      const SUPERADMIN_EMAIL = 'myozscoop@gmail.com';
-      const isSuperAdmin = email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
-      
-      setUser({
-        id: clerkUser.id,
-        name: clerkUser.fullName || clerkUser.username || email.split('@')[0],
-        email: email,
-        photoUrl: clerkUser.imageUrl,
-        role: isSuperAdmin ? 'superadmin' : 'user'
-      });
-    } else if (isLoaded && !isSignedIn) {
-      setUser(null);
-    }
-  }, [isLoaded, isSignedIn, clerkUser]);
+    void loadData();
+  }, [user.id, family.id]);
 
-  // Initialize Data when User is present
   useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+    if (activeView !== 'tree') return;
+    const refresh = () => { if (!document.hidden) void loadData(); };
+    const timer = window.setInterval(refresh, 20000);
+    window.addEventListener('focus', refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [activeView, family.id]);
 
   const loadData = async () => {
     try {
       const [data, marriageList] = await Promise.all([
         storageService.loadTree(getToken),
-        marriageService.listAll(getToken).catch(() => []),
+        marriageService.listAll(getToken),
       ]);
       setTreeData(data);
       setMarriages(marriageList);
+      setDataError('');
     } catch (e) {
       console.error("Failed to load tree data", e);
+      setDataError(e instanceof Error ? e.message : 'Could not load this family’s records.');
     }
   };
 
@@ -129,12 +119,13 @@ function AppContent() {
     try {
       const [data, marriageList] = await Promise.all([
         storageService.loadTree(getToken),
-        marriageService.listAll(getToken).catch(() => []),
+        marriageService.listAll(getToken),
       ]);
       setTreeData(data);
       setMarriages(marriageList);
     } catch (e) {
       console.error("Failed to reload after marriage change", e);
+      setDataError(e instanceof Error ? e.message : 'Could not refresh marriage records.');
     }
   };
 
@@ -158,7 +149,7 @@ function AppContent() {
     // Optimistic Update
     setTreeData(prev => {
       if (!prev) return null;
-      const newData = { ...prev };
+      const newData = { ...prev, people: { ...prev.people } };
       newData.people[updatedPerson.id] = updatedPerson;
       
       if (oldFatherId !== newFatherId) {
@@ -219,6 +210,10 @@ function AppContent() {
     });
 
     await storageService.savePerson(updatedPerson, getToken);
+    if (!treeData.rootId) {
+      await storageService.saveTreeMeta(updatedPerson.id, getToken);
+      setTreeData(prev => prev ? { ...prev, rootId: updatedPerson.id } : prev);
+    }
     setSelectedPersonId(null);
     setActiveView('tree');
   };
@@ -231,7 +226,7 @@ function AppContent() {
 
     setTreeData(prev => {
       if (!prev) return null;
-      const newData = { ...prev };
+      const newData = { ...prev, people: { ...prev.people } };
       
       personToDelete.spouseIds.forEach(sid => {
           const spouse = newData.people[sid];
@@ -324,9 +319,7 @@ function AppContent() {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    setUser(null);
-    setTreeData(null);
+    await signOut({ redirectUrl: '/' });
   };
 
   const handleSelectPerson = (id: string) => {
@@ -353,23 +346,17 @@ function AppContent() {
       URL.revokeObjectURL(url);
   };
 
-  if (!isLoaded) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-950 text-brand-500">
-        <Loader2 size={48} className="animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isSignedIn || !user) {
-    return <LoginScreen onLogin={() => {}} />;
-  }
-
   if (!treeData) {
       return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-4">
-            <Loader2 size={32} className="animate-spin text-brand-500" />
-            <p>Loading your family history...</p>
+            {dataError ? (
+              <>
+                <p role="alert" className="max-w-md text-center text-rose-300">{dataError}</p>
+                <button onClick={() => void loadData()} className="rounded-lg bg-brand-600 px-4 py-2 text-white">Try again</button>
+                <button onClick={onBrowse}>Choose another family</button>
+                <button onClick={handleLogout}>Sign out</button>
+              </>
+            ) : <><Loader2 size={32} className="animate-spin text-brand-500" /><p>Loading your family history...</p></>}
         </div>
       );
   }
@@ -397,7 +384,7 @@ function AppContent() {
         </button>
 
         <nav className="flex-1 p-2 space-y-1">
-          {NAV_ITEMS.filter(item => !item.adminOnly || user.role === 'admin' || user.role === 'superadmin').map(item => (
+          {NAV_ITEMS.map(item => (
             <button
               key={item.id}
               onClick={() => setActiveView(item.id as ViewMode)}
@@ -458,14 +445,14 @@ function AppContent() {
                 {activeView === 'smart-add' && 'AI Quick Import'}
                 {activeView === 'narrative' && 'AI Family Narrative'}
                 {activeView === 'settings' && 'Settings'}
-                {activeView === 'invites' && 'Invitations'}
+                {(activeView === 'family' || activeView === 'invites') && 'Family & access'}
             </h2>
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3 pr-4 border-r border-slate-800">
                    <div className="text-right hidden sm:block">
                        <div className="text-sm font-medium text-white">{user.name}</div>
                        <div className="text-xs text-slate-400">
-                         {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Family Member'}
+                         {family.name} · {family.role === 'owner' ? 'Owner' : 'Member'}
                        </div>
                    </div>
                    <img src={user.photoUrl} alt="User" className="w-8 h-8 rounded-full border border-slate-600" />
@@ -480,8 +467,18 @@ function AppContent() {
             </div>
         </header>
 
-        <div className="flex-1 overflow-hidden p-6 relative">
-             {activeView === 'tree' && (
+        {dataError && <p role="alert" className="bg-rose-950 px-6 py-2 text-sm text-rose-200">{dataError}</p>}
+        <div className="flex-1 overflow-hidden p-4 sm:p-6 relative">
+             {activeView === 'tree' && Object.keys(treeData.people).length === 0 && (
+               <div className="h-full flex flex-col items-center justify-center text-center gap-4">
+                 <Leaf size={40} className="text-brand-400" />
+                 <h3 className="text-xl font-semibold text-white">Start {family.name}’s story</h3>
+                 <p className="max-w-md text-slate-400">Your new family tree is empty. Add the first person to begin.</p>
+                 <button onClick={createNewPerson} className="rounded-xl bg-brand-600 px-5 py-3 text-white hover:bg-brand-500">Add first person</button>
+                 <button onClick={() => setActiveView('family')} className="text-brand-300">Invite your relatives</button>
+               </div>
+             )}
+             {activeView === 'tree' && Object.keys(treeData.people).length > 0 && (
                  <TreeVisualizer
                     data={treeData}
                     marriages={marriages}
@@ -518,12 +515,39 @@ function AppContent() {
                  <SettingsView />
              )}
 
-             {activeView === 'invites' && (
-                 <InviteManager currentUser={user} />
+             {(activeView === 'family' || activeView === 'invites') && (
+                 <div className="h-full overflow-y-auto">
+                   <FamilyManager family={family} onChanged={onFamilyChanged} onBrowse={onBrowse} />
+                 </div>
              )}
         </div>
       </main>
     </div>
+  );
+}
+
+function AppContent() {
+  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const user = useMemo<User | null>(() => {
+    if (!clerkUser || !isSignedIn) return null;
+    const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+    return {
+      id: clerkUser.id,
+      name: clerkUser.fullName || clerkUser.username || email.split('@')[0],
+      email,
+      photoUrl: clerkUser.imageUrl,
+      role: email.toLowerCase() === 'myozscoop@gmail.com' ? 'superadmin' : 'user',
+    };
+  }, [clerkUser, isSignedIn]);
+
+  if (!isLoaded) return <div className="h-screen bg-slate-950 text-brand-400 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  if (!user) return <LoginScreen onLogin={() => {}} />;
+  return (
+    <FamilyGate key={user.id}>
+      {(family, onChanged, onBrowse) => (
+        <FamilyTreeApp key={`${user.id}:${family.id}`} user={user} family={family} onFamilyChanged={onChanged} onBrowse={onBrowse} />
+      )}
+    </FamilyGate>
   );
 }
 

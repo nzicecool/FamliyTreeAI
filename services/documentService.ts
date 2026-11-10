@@ -1,4 +1,5 @@
 import { PersonDocument, DocumentType } from '../types';
+import { familyScopeHeaders } from './familyService';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -14,8 +15,10 @@ const ALLOWED_MIME_TYPES = [
 
 export const documentService = {
   async getHeaders(getToken: () => Promise<string | null>) {
+    const scope = familyScopeHeaders();
     const token = await getToken();
     return {
+      ...scope,
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };

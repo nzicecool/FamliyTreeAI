@@ -70,5 +70,5 @@ export const NAV_ITEMS = [
   { id: 'smart-add', label: 'AI Import', icon: <Sparkles size={20} /> },
   { id: 'narrative', label: 'AI Narrative', icon: <BookOpen size={20} /> },
   { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
-  { id: 'invites', label: 'Invitations', icon: <UserPlus size={20} />, adminOnly: true },
+  { id: 'family', label: 'Family & access', icon: <UserPlus size={20} /> },
 ];

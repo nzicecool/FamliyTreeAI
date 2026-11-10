@@ -1,9 +1,12 @@
 import { Marriage, MarriageStatus } from '../types';
+import { familyScopeHeaders } from './familyService';
 
 export const marriageService = {
   async getHeaders(getToken: () => Promise<string | null>) {
+    const scope = familyScopeHeaders();
     const token = await getToken();
     return {
+      ...scope,
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };

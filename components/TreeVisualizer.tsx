@@ -324,7 +324,9 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, marriages 
       targetName: (link.target.data as any).name as string,
     }));
 
-    const laidOutById = new Map(treeNodes.map(n => [n.id, n]));
+    const laidOutById = new Map<string, { id: string; baseX: number; baseY: number; name: string; attrs: NodeAttrs }>(
+      treeNodes.map(n => [n.id, n]),
+    );
 
     // Classify spouse relationships.
     const laidOutPairs = new Map<string, { aId: string; bId: string }>();
@@ -454,7 +456,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({ data, marriages 
     });
 
     return { positions, parentLinks, spouseLinks };
-  }, [layout, nodeOverrides]);
+  }, [layout, nodeOverrides, marriages]);
 
   // Disconnected = anyone neither laid out nor attached as a spouse.
   const disconnected: Person[] = useMemo(() => {

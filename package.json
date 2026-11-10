@@ -8,6 +8,7 @@
     "build": "vite build",
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "tsc --noEmit",
+    "test:families": "tsx --test tests/families.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

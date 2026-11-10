@@ -1,1 +1,2 @@
 - [Development Google sign-in](auth-development.md) — Google SSO is enabled in Clerk development; readiness checks must distinguish initiation from completed login.
+- [Clerk testing redirect origin](clerk-testing-origin.md) — the test helper may return to default HTTPS instead of the explicit-port preview; verify the app received a session.

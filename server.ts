@@ -7,8 +7,8 @@ import pg from 'pg';
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import { complete, ProviderId, ALL_PROVIDERS, ProviderKeys, PERSON_JSON_HINT } from './aiProviders';
 import { encryptString, decryptString, selfCheck as encryptionSelfCheck } from './cryptoUtil';
+import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from './server/families';
 
-const SUPERADMIN_EMAIL = 'myozscoop@gmail.com';
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
 type BYOProvider = typeof BYO_PROVIDERS[number];
 
@@ -289,6 +289,7 @@ async function startServer() {
   const clerkClient = secretKey ? createClerkClient({ secretKey }) : null;
 
   const authenticate = async (req: any, res: any, next: any) => {
+    if (req.auth?.userId) return next();
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -305,31 +306,35 @@ async function startServer() {
     }
   };
 
-  const requireAdmin = async (req: any, res: any, next: any) => {
-    try {
-      if (!clerkClient) {
-        return res.status(500).json({ error: 'Server auth not configured' });
-      }
-      const user = await clerkClient.users.getUser(req.auth.userId);
-      const email = user.primaryEmailAddress?.emailAddress?.toLowerCase() || '';
-      const role = (user.publicMetadata as any)?.role;
-      const isAdmin =
-        email === SUPERADMIN_EMAIL.toLowerCase() ||
-        role === 'admin' ||
-        role === 'superadmin';
-      if (!isAdmin) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      next();
-    } catch (error) {
-      console.error('Admin check failed:', error);
-      res.status(403).json({ error: 'Forbidden' });
-    }
-  };
+  registerFamilyRoutes(app, pool, authenticate, async (userId) => {
+    if (!clerkClient) throw new Error('Clerk is not configured.');
+    const user = await clerkClient.users.getUser(userId);
+    const verifiedEmails = user.emailAddresses
+      .filter(address => address.verification?.status === 'verified')
+      .map(address => address.emailAddress.toLowerCase().trim());
+    const primary = user.emailAddresses.find(address => address.id === user.primaryEmailAddressId);
+    return {
+      userId,
+      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Family member',
+      email: primary && verifiedEmails.includes(primary.emailAddress.toLowerCase().trim())
+        ? primary.emailAddress.toLowerCase().trim() : verifiedEmails[0] || '',
+      verifiedEmails,
+    };
+  });
 
-  // ----- Tree -----
+  const scopeFamily = familyScopeMiddleware(pool);
+  app.use('/api', (req: any, res, next) => {
+    // Old app-wide invitations did not grant access to a shared tree.
+    if (/^\/invites?(?:\/|$)/.test(req.path)) {
+      return res.status(410).json({ error: 'Use family invitations from the Family & access page.' });
+    }
+    if (!/^\/(?:tree|person|marriage|marriages|document)(?:\/|$)/.test(req.path)) return next();
+    authenticate(req, res, () => scopeFamily(req, res, next));
+  });
+
+  // ----- Tree (membership-checked family storage namespace) -----
   app.get('/api/tree/load', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     try {
       const peopleRes = await pool.query<DbPerson>(
         'SELECT * FROM people WHERE user_id = $1',
@@ -354,7 +359,7 @@ async function startServer() {
   });
 
   app.post('/api/tree/save-person', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { person } = req.body || {};
     if (!person || typeof person.id !== 'string') {
       return res.status(400).json({ error: 'Missing person.id' });
@@ -408,7 +413,7 @@ async function startServer() {
   });
 
   app.delete('/api/tree/delete-person/:id', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const personId = req.params.id;
     try {
       await pool.query(
@@ -423,7 +428,7 @@ async function startServer() {
   });
 
   app.post('/api/tree/save-meta', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { rootId } = req.body || {};
     try {
       await pool.query(
@@ -438,99 +443,6 @@ async function startServer() {
     } catch (error: any) {
       console.error('Save meta error:', error);
       res.status(500).json({ error: error.message });
-    }
-  });
-
-  // ----- Invites -----
-  app.get('/api/invites', authenticate, requireAdmin, async (_req: any, res) => {
-    try {
-      const result = await pool.query(
-        `SELECT email, invited_by_name, status, created_at
-         FROM invites
-         ORDER BY created_at DESC`
-      );
-      const invites = result.rows.map((row) => ({
-        email: row.email,
-        invitedBy: row.invited_by_name,
-        status: row.status,
-        invitedAt: row.created_at instanceof Date
-          ? row.created_at.toISOString()
-          : String(row.created_at),
-      }));
-      res.json({ invites });
-    } catch (error: any) {
-      console.error('List invites error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/invite', authenticate, requireAdmin, async (req: any, res) => {
-    const { email, invitedBy } = req.body || {};
-    const userId = req.auth.userId;
-
-    if (!email || !invitedBy) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const inviteEmail = String(email).toLowerCase().trim();
-
-    try {
-      await pool.query(
-        `INSERT INTO invites (email, invited_by_user_id, invited_by_name, status)
-         VALUES ($1, $2, $3, 'pending')
-         ON CONFLICT (email) DO UPDATE SET
-           invited_by_user_id = EXCLUDED.invited_by_user_id,
-           invited_by_name = EXCLUDED.invited_by_name,
-           status = 'pending',
-           created_at = NOW()`,
-        [inviteEmail, userId, String(invitedBy)]
-      );
-
-      const apiKey = process.env.AGENTMAIL_API_KEY;
-      let emailSent = false;
-      let emailError: string | null = null;
-
-      if (apiKey) {
-        try {
-          const response = await fetch('https://api.agentmail.to/v1/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              to: inviteEmail,
-              subject: 'You are invited to join FamilyTreeAI',
-              body: `
-                <h1>Welcome to FamilyTreeAI!</h1>
-                <p>${invitedBy} has invited you to join their family tree.</p>
-                <p>You can now sign up at the following link:</p>
-                <a href="${req.headers.origin || 'https://familytreeai.app'}">Join FamilyTreeAI</a>
-                <br/><br/>
-                <p>Best regards,<br/>The FamilyTreeAI Team</p>
-              `,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('Agentmail error:', errorData);
-            emailError = `Agentmail returned ${response.status}`;
-          } else {
-            emailSent = true;
-          }
-        } catch (sendErr: any) {
-          console.error('Agentmail request failed:', sendErr);
-          emailError = sendErr.message || 'Failed to send email';
-        }
-      } else {
-        emailError = 'AGENTMAIL_API_KEY not configured';
-      }
-
-      res.json({ success: true, emailSent, emailError });
-    } catch (error: any) {
-      console.error('Invite error:', error);
-      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -652,7 +564,7 @@ async function startServer() {
     try {
       const result = await pool.query(
         'SELECT * FROM marriages WHERE user_id = $1 ORDER BY created_at ASC',
-        [req.auth.userId],
+        [req.treeUserId],
       );
       res.json(result.rows.map(rowToMarriage));
     } catch (err: any) {
@@ -661,7 +573,7 @@ async function startServer() {
   });
 
   app.get('/api/person/:personId/marriages', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { personId } = req.params;
     try {
       const result = await pool.query(
@@ -677,7 +589,7 @@ async function startServer() {
   });
 
   app.post('/api/marriage', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { person1Id, person2Id, marriageDate, marriagePlace, endDate, endPlace, status = 'married', notes } = req.body || {};
     if (!person1Id || !person2Id) return res.status(400).json({ error: 'person1Id and person2Id are required.' });
     if (person1Id === person2Id) return res.status(400).json({ error: 'A person cannot marry themselves.' });
@@ -707,7 +619,7 @@ async function startServer() {
   });
 
   app.put('/api/marriage/:id', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { id } = req.params;
     const { marriageDate, marriagePlace, endDate, endPlace, status, notes } = req.body || {};
     if (status && !VALID_MARRIAGE_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status.' });
@@ -734,7 +646,7 @@ async function startServer() {
   });
 
   app.delete('/api/marriage/:id', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { id } = req.params;
     try {
       const row = await pool.query('SELECT * FROM marriages WHERE id = $1 AND user_id = $2', [id, userId]);
@@ -764,7 +676,7 @@ async function startServer() {
   ];
 
   app.get('/api/person/:personId/documents', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { personId } = req.params;
     try {
       const result = await pool.query(
@@ -789,7 +701,7 @@ async function startServer() {
   });
 
   app.post('/api/person/:personId/document', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { personId } = req.params;
     const { name, docType, mimeType, fileSize, fileData } = req.body || {};
 
@@ -834,7 +746,7 @@ async function startServer() {
   });
 
   app.get('/api/document/:docId', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { docId } = req.params;
     try {
       const result = await pool.query(
@@ -851,7 +763,7 @@ async function startServer() {
   });
 
   app.delete('/api/document/:docId', authenticate, async (req: any, res) => {
-    const userId = req.auth.userId;
+    const userId = req.treeUserId;
     const { docId } = req.params;
     try {
       const result = await pool.query(
@@ -960,17 +872,6 @@ but you may add general historical context if a date is provided.
     ),
   );
 
-  app.delete('/api/invite/:email', authenticate, requireAdmin, async (req: any, res) => {
-    const inviteEmail = String(req.params.email).toLowerCase().trim();
-    try {
-      await pool.query('DELETE FROM invites WHERE email = $1', [inviteEmail]);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Delete invite error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -990,16 +891,18 @@ but you may add general historical context if a date is provided.
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('/{*path}', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   try {
     await ensureSchema();
+    await ensureFamilySchema(pool);
     console.log('Postgres schema ready.');
   } catch (err: any) {
     console.error('Postgres schema bootstrap failed:', err.message);
+    throw err;
   }
 
   try {
