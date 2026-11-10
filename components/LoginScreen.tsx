@@ -129,14 +129,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             />
           </div>
 
-          <div className="mt-12 flex items-center gap-6 grayscale opacity-50">
-            <div className="text-xs font-mono text-slate-500 uppercase tracking-widest">Built with</div>
-            <div className="flex gap-4 items-center">
-              <span className="text-white font-semibold text-sm">Firebase</span>
-              <span className="text-white font-semibold text-sm">Gemini AI</span>
-              <span className="text-white font-semibold text-sm">React</span>
-            </div>
-          </div>
         </div>
       </div>
 

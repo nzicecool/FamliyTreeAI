@@ -1,0 +1,1 @@
+- [Development Google sign-in](auth-development.md) — Google SSO is enabled in Clerk development; readiness checks must distinguish initiation from completed login.
