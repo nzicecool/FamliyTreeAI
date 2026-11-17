@@ -9,6 +9,7 @@ import { FamilyManager } from './components/FamilyManager';
 import { FamilyGate } from './components/FamilyGate';
 import { FAQSection } from './components/FAQSection';
 import { SiteFooter } from './components/SiteFooter';
+import { PublicBetaBadge } from './components/PublicBetaBadge';
 import { Family } from './familyTypes';
 import { NarrativeView } from './components/NarrativeView';
 import { SettingsView } from './components/SettingsView';
@@ -371,7 +372,7 @@ const FamilyTreeApp: React.FC<{
           <div className="bg-brand-600 p-2 rounded-lg shrink-0">
             <Leaf size={24} className="text-white" />
           </div>
-          {isSidebarOpen && <h1 className="font-bold text-xl tracking-tight text-white whitespace-nowrap">FamilyTreeAI</h1>}
+          {isSidebarOpen && <h1 className="font-bold text-lg tracking-tight text-white whitespace-nowrap">FamilyTreeAI<PublicBetaBadge /></h1>}
         </div>
 
         {/* Floating collapse handle on the right edge */}

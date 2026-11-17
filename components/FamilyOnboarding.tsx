@@ -5,6 +5,7 @@ import {
   KeyRound, LoaderCircle, Mail, Plus, RefreshCw, Search, ShieldCheck, Users, X,
 } from 'lucide-react';
 import { FamilyContext, PublicFamily } from '../familyTypes';
+import { PublicBetaBadge } from './PublicBetaBadge';
 import {
   captureInvitation, clearInvitationToken, familyService, pendingInvitationToken,
 } from '../services/familyService';
@@ -197,7 +198,7 @@ export const FamilyOnboarding: React.FC<FamilyOnboardingProps> = ({
               <FolderHeart size={22} aria-hidden="true" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-300">FamilyTreeAI</p>
+              <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-300">FamilyTreeAI<PublicBetaBadge /></p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight text-white">Your family spaces</h1>
             </div>
           </div>

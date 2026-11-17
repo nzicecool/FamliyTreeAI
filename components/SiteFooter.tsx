@@ -1,5 +1,6 @@
 import React from 'react';
 import { Leaf, Linkedin, Mail, Network } from 'lucide-react';
+import { PublicBetaBadge } from './PublicBetaBadge';
 
 interface SiteFooterProps {
   compact?: boolean;
@@ -65,7 +66,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand-400/20 bg-brand-400/10 text-brand-300">
                 <Leaf size={21} aria-hidden="true" />
               </span>
-              <span className="text-lg font-semibold tracking-tight">FamilyTreeAI</span>
+              <span className="text-lg font-semibold tracking-tight">FamilyTreeAI<PublicBetaBadge /></span>
             </a>
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
               A private shared space for relatives to preserve their family history together.

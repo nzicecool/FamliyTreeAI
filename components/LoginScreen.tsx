@@ -4,6 +4,7 @@ import { ArrowRight, Network } from 'lucide-react';
 import { pendingInvitationToken } from '../services/familyService';
 import { FAQSection } from './FAQSection';
 import { SiteFooter } from './SiteFooter';
+import { PublicBetaBadge } from './PublicBetaBadge';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -97,7 +98,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-300/20 bg-brand-400/10 text-brand-300 lg:mx-0">
               <Network size={23} aria-hidden="true" />
             </div>
-            <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-300">FamilyTreeAI</p>
+            <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-300">FamilyTreeAI<PublicBetaBadge /></p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
               {mode === 'sign-in' ? 'Welcome back' : 'Start your family archive'}
             </h2>
