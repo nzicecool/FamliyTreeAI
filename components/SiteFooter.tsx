@@ -1,5 +1,5 @@
 import React from 'react';
-import { Leaf, Linkedin, Mail, Network } from 'lucide-react';
+import { Leaf, Linkedin, Network } from 'lucide-react';
 import { PublicBetaBadge } from './PublicBetaBadge';
 
 interface SiteFooterProps {
@@ -14,7 +14,6 @@ const links = {
   privacy: 'https://senathltd.com/privacy',
   terms: 'https://senathltd.com/terms',
   cookies: 'https://senathltd.com/cookies',
-  email: 'mailto:support@senathltd.com',
   linkedin: 'https://www.linkedin.com/company/senath-ltd',
 };
 
@@ -34,9 +33,6 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
           <nav aria-label="Footer links" className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.faq}>
               FAQ
-            </a>
-            <a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.email}>
-              Email
             </a>
             <a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.privacy} {...externalLinkProps}>
               Privacy
@@ -89,13 +85,9 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
 
           <div>
             <h2 className="text-sm font-semibold text-white">Contact Us</h2>
-            <a
-              href={links.email}
-              className="mt-4 inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300"
-            >
-              <Mail size={16} aria-hidden="true" />
-              support@senathltd.com
-            </a>
+            <p className="mt-4 text-sm text-slate-400">
+              Contact details coming soon.
+            </p>
             <a
               href={links.linkedin}
               {...externalLinkProps}
