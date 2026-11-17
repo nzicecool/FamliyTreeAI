@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ClerkProvider, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import { captureInvitation } from './services/familyService';
+import { FAQPage } from './components/FAQPage';
 
 captureInvitation();
 
@@ -40,7 +41,9 @@ function Root() {
   );
 }
 
-if (!PUBLISHABLE_KEY) {
+if (window.location.pathname.replace(/\/$/, '') === '/faq') {
+  root.render(<FAQPage />);
+} else if (!PUBLISHABLE_KEY) {
   root.render(
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-center">
       <div className="max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">

@@ -1,5 +1,5 @@
 import { Person, Gender, TreeData } from './types';
-import { User, Users, Baby, Heart, Sparkles, Network, FileText, Plus, UserPlus, BookOpen, Settings } from 'lucide-react';
+import { User, Users, Baby, Heart, Sparkles, Network, FileText, Plus, UserPlus, BookOpen, Settings, CircleHelp } from 'lucide-react';
 
 export const INITIAL_DATA: TreeData = {
   rootId: '1',
@@ -71,4 +71,5 @@ export const NAV_ITEMS = [
   { id: 'narrative', label: 'AI Narrative', icon: <BookOpen size={20} /> },
   { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
   { id: 'family', label: 'Family & access', icon: <UserPlus size={20} /> },
+  { id: 'faq', label: 'FAQ & help', icon: <CircleHelp size={20} /> },
 ];

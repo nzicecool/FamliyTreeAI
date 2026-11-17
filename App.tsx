@@ -7,6 +7,8 @@ import { SmartAdd } from './components/SmartAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { FamilyManager } from './components/FamilyManager';
 import { FamilyGate } from './components/FamilyGate';
+import { FAQSection } from './components/FAQSection';
+import { SiteFooter } from './components/SiteFooter';
 import { Family } from './familyTypes';
 import { NarrativeView } from './components/NarrativeView';
 import { SettingsView } from './components/SettingsView';
@@ -445,6 +447,7 @@ const FamilyTreeApp: React.FC<{
                 {activeView === 'smart-add' && 'AI Quick Import'}
                 {activeView === 'narrative' && 'AI Family Narrative'}
                 {activeView === 'settings' && 'Settings'}
+                {activeView === 'faq' && 'FAQ & help'}
                 {(activeView === 'family' || activeView === 'invites') && 'Family & access'}
             </h2>
             <div className="flex items-center gap-4">
@@ -515,12 +518,17 @@ const FamilyTreeApp: React.FC<{
                  <SettingsView />
              )}
 
+             {activeView === 'faq' && (
+                 <div className="h-full overflow-y-auto"><FAQSection /></div>
+             )}
+
              {(activeView === 'family' || activeView === 'invites') && (
                  <div className="h-full overflow-y-auto">
                    <FamilyManager family={family} onChanged={onFamilyChanged} onBrowse={onBrowse} />
                  </div>
              )}
         </div>
+        <div className="shrink-0"><SiteFooter compact /></div>
       </main>
     </div>
   );

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import { ArrowRight, Network } from 'lucide-react';
 import { pendingInvitationToken } from '../services/familyService';
+import { FAQSection } from './FAQSection';
+import { SiteFooter } from './SiteFooter';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -38,6 +40,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   if (invite) externalLoginUrl.searchParams.set('invite', invite);
 
   return (
+    <>
     <main className="min-h-[100dvh] bg-slate-950 text-slate-100 lg:grid lg:grid-cols-[1.05fr_.95fr]">
       <section className="relative flex min-h-[35vh] flex-col justify-center overflow-hidden px-6 py-12 sm:px-10 lg:min-h-[100dvh] lg:px-16 xl:px-24">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -191,8 +194,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           <p className="mt-6 text-center text-xs leading-5 text-slate-500">
             Your family’s records stay private unless you choose to share them.
           </p>
+          <a href="#faq" className="mt-4 block text-center text-sm text-brand-300 underline underline-offset-4 hover:text-white">
+            Need help getting started? Read the FAQ
+          </a>
         </div>
       </section>
     </main>
+    <FAQSection />
+    <SiteFooter />
+    </>
   );
 };

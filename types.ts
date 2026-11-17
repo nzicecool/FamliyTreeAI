@@ -106,7 +106,7 @@ export interface PersonDocument {
   createdAt: string;
 }
 
-export type ViewMode = 'editor' | 'tree' | 'smart-add' | 'invites' | 'family' | 'narrative' | 'settings';
+export type ViewMode = 'editor' | 'tree' | 'smart-add' | 'invites' | 'family' | 'narrative' | 'settings' | 'faq';
 
 export interface User {
   id: string;
