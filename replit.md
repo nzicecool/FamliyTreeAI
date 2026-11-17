@@ -21,8 +21,11 @@ A free, open-source family tree / genealogy web application powered by AI.
 
 ## Required Secrets
 
-- `VITE_CLERK_PUBLISHABLE_KEY` — Clerk frontend publishable key
-- `CLERK_SECRET_KEY` — Clerk backend secret for token verification
+- `VITE_CLERK_PUBLISHABLE_KEY` — Clerk **development** frontend publishable key (`pk_test_`); keep this for the workspace preview.
+- `CLERK_SECRET_KEY` — Clerk **development** backend secret (`sk_test_`). Keep unchanged: it is also the existing fallback encryption seed for saved BYO keys when `ENCRYPTION_KEY` is absent.
+- `VITE_CLERK_PUBLISHABLE_KEY_PROD` — Clerk **production** frontend publishable key (`pk_live_`), selected by Vite's production build.
+- `CLERK_SECRET_KEY_PROD` — Clerk **production** backend secret (`sk_live_`), selected when `NODE_ENV=production`.
+- Production does not fall back to development Clerk credentials. Add both `_PROD` keys before publishing; frontend key changes require rebuilding/republishing. This auth selection deliberately does not rotate the existing encryption seed or migrate Clerk users between instances.
 - `GEMINI_API_KEY` — Google Gemini API key (server-side only)
 - `AGENTMAIL_API_KEY` — Agentmail.to API key for sending invites
 - `DATABASE_URL` — provisioned automatically by Replit Postgres

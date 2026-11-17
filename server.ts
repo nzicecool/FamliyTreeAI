@@ -8,6 +8,7 @@ import { createClerkClient, verifyToken } from '@clerk/backend';
 import { complete, ProviderId, ALL_PROVIDERS, ProviderKeys, PERSON_JSON_HINT } from './aiProviders';
 import { encryptString, decryptString, selfCheck as encryptionSelfCheck } from './cryptoUtil';
 import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from './server/families';
+import { requireClerkKey } from './clerkConfig';
 
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
 type BYOProvider = typeof BYO_PROVIDERS[number];
@@ -285,7 +286,7 @@ async function startServer() {
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
 
-  const secretKey = process.env.CLERK_SECRET_KEY;
+  const secretKey = requireClerkKey(process.env, process.env.NODE_ENV === 'production', 'secret');
   const clerkClient = secretKey ? createClerkClient({ secretKey }) : null;
 
   const authenticate = async (req: any, res: any, next: any) => {
