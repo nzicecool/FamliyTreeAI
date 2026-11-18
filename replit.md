@@ -102,6 +102,15 @@ All AI calls run server-side. Provider keys never reach the browser.
 - Decryption only happens at one place in the codebase: inside the `/api/ai/*` handler, after Clerk authentication, immediately before the LLM call. `GET /api/settings` only checks ciphertext non-null and never touches the master key.
 - Stored format: `v1:<iv_b64>:<authTag_b64>:<ciphertext_b64>`. Any value that fails to decrypt (tampered, wrong AAD, legacy plaintext) is treated as "not configured" and the dispatcher falls back to Gemini.
 
+## Product events
+- GrowthFlowAI product events use only `GROWTHFLOWAI_FT_API_KEY_DEV` in development and `GROWTHFLOWAI_FT_API_KEY_PROD` in production. These are separate from support keys; never fall back between environments.
+- Visitors must enable analytics in Consentry. No preference, rejection, invalid storage, or later revocation means subsequent requests carry no analytics permission.
+- Successful allowlisted family, person record, AI, and support operations emit server-side events. `person_record_saved` includes relationship-maintenance writes; it is not a unique count of people created.
+- `app_session_started` is emitted once per Clerk session/browser tab, with a bounded 24-hour server deduplication window. It is not a verified new-account/signup event.
+- Payloads contain the app, environment and (when authenticated) a SHA-256 pseudonymous user ID only. No contact creation/scoring by email: emails, names, family IDs, record content, AI prompts and support messages are excluded.
+- Delivery is bounded, best-effort and non-blocking for operations. Failures are logged without payloads; no durable queue or automatic operation-event retries.
+- `npx tsx --test tests/productEvents.test.ts tests/support.test.ts` checks consent, key separation, success filtering, session deduplication and delivery errors without real submissions.
+
 ## Project Layout
 
 ### Support form

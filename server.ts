@@ -10,6 +10,7 @@ import { encryptString, decryptString, selfCheck as encryptionSelfCheck } from '
 import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from './server/families';
 import { requireClerkKey } from './clerkConfig';
 import { registerSupportRoutes } from './server/support';
+import { createProductEvents } from './server/productEvents';
 
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
 type BYOProvider = typeof BYO_PROVIDERS[number];
@@ -285,6 +286,8 @@ async function startServer() {
   const PORT = 5000;
 
   app.use(cors());
+  const productEvents = createProductEvents();
+  app.use(productEvents.middleware);
   registerSupportRoutes(app);
   app.use(express.json({ limit: '10mb' }));
 
@@ -301,13 +304,15 @@ async function startServer() {
     const token = authHeader.split(' ')[1];
     try {
       const sessionClaims = await verifyToken(token, { secretKey });
-      req.auth = { userId: sessionClaims.sub };
+      req.auth = { userId: sessionClaims.sub, sessionId: sessionClaims.sid };
       next();
     } catch (error) {
       console.error('Clerk auth error:', error);
       res.status(401).json({ error: 'Invalid token' });
     }
   };
+
+  app.post('/api/product-events/session', authenticate, productEvents.sessionHandler);
 
   registerFamilyRoutes(app, pool, authenticate, async (userId) => {
     if (!clerkClient) throw new Error('Clerk is not configured.');

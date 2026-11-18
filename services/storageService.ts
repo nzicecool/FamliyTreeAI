@@ -1,5 +1,6 @@
 import { Person, TreeData } from '../types';
 import { familyScopeHeaders } from './familyService';
+import { productAnalyticsHeaders } from './productEvents';
 
 export const storageService = {
   // Helper to get auth headers
@@ -8,6 +9,7 @@ export const storageService = {
     const token = await getToken();
     return {
       ...scope,
+      ...productAnalyticsHeaders(),
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };

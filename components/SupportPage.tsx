@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, CircleHelp, Leaf, LockKeyhole, Send } from 'lucide-react';
 import { SiteFooter } from './SiteFooter';
 import { PublicBetaBadge } from './PublicBetaBadge';
+import { productAnalyticsHeaders } from '../services/productEvents';
 
 type SupportValues = {
   name: string;
@@ -57,7 +58,7 @@ export const SupportPage: React.FC = () => {
     try {
       const response = await fetch('/api/support/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...productAnalyticsHeaders() },
         body: JSON.stringify({ ...trimmed, website }),
       });
       const result = await response.json().catch(() => null);

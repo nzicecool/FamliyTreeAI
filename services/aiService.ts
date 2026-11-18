@@ -1,3 +1,4 @@
+import { productAnalyticsHeaders } from './productEvents';
 import { Person, TreeData } from '../types';
 
 type GetToken = () => Promise<string | null>;
@@ -8,6 +9,7 @@ async function authedFetch(path: string, getToken: GetToken, init: RequestInit =
     ...init,
     headers: {
       ...(init.headers || {}),
+      ...productAnalyticsHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },

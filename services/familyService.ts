@@ -1,3 +1,4 @@
+import { productAnalyticsHeaders } from './productEvents';
 import { Family, FamilyContext, FamilyDetails, FamilyInput, PublicFamily } from '../familyTypes';
 
 type GetToken = () => Promise<string | null>;
@@ -36,7 +37,7 @@ async function request<T>(path: string, getToken: GetToken, init: RequestInit = 
   if (!token) throw new Error('Please sign in again.');
   const response = await fetch(path, {
     ...init,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init.headers },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...productAnalyticsHeaders(), ...init.headers },
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || 'The family request could not be completed.');

@@ -19,6 +19,7 @@ import { generateGedcom } from './services/gedcomService';
 import { Leaf, Plus, PanelLeftClose, PanelLeft, LogOut, Loader2, Download, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
+import { observeAppSession } from './services/productEvents';
 
 // Error Boundary Component
 class ErrorBoundary extends (React.Component as any) {
@@ -537,6 +538,11 @@ const FamilyTreeApp: React.FC<{
 
 function AppContent() {
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const { getToken, sessionId } = useAuth();
+  useEffect(() => {
+    if (!isSignedIn || !sessionId) return;
+    return observeAppSession(getToken, sessionId);
+  }, [isSignedIn, sessionId, getToken]);
   const user = useMemo<User | null>(() => {
     if (!clerkUser || !isSignedIn) return null;
     const email = clerkUser.primaryEmailAddress?.emailAddress || '';
