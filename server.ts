@@ -9,6 +9,7 @@ import { complete, ProviderId, ALL_PROVIDERS, ProviderKeys, PERSON_JSON_HINT } f
 import { encryptString, decryptString, selfCheck as encryptionSelfCheck } from './cryptoUtil';
 import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from './server/families';
 import { requireClerkKey } from './clerkConfig';
+import { registerSupportRoutes } from './server/support';
 
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
 type BYOProvider = typeof BYO_PROVIDERS[number];
@@ -284,6 +285,7 @@ async function startServer() {
   const PORT = 5000;
 
   app.use(cors());
+  registerSupportRoutes(app);
   app.use(express.json({ limit: '10mb' }));
 
   const secretKey = requireClerkKey(process.env, process.env.NODE_ENV === 'production', 'secret');

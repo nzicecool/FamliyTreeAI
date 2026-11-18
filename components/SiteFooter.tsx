@@ -8,6 +8,7 @@ interface SiteFooterProps {
 
 const links = {
   faq: '/faq',
+  support: '/support',
   signIn: '/sign-in',
   signUp: '/sign-up',
   company: 'https://senathltd.com',
@@ -31,6 +32,9 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 text-xs sm:flex-row sm:items-center sm:justify-between">
           <p>© {currentYear} SENATH Ltd — All Rights Reserved.</p>
           <nav aria-label="Footer links" className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.support}>
+              Support
+            </a>
             <a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.faq}>
               FAQ
             </a>
@@ -77,6 +81,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
             <h2 className="text-sm font-semibold text-white">Quick Links</h2>
             <ul className="mt-4 space-y-3 text-sm">
               <li><a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.faq}>FAQ</a></li>
+              <li><a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.support}>Support</a></li>
               <li><a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.signIn}>Sign in</a></li>
               <li><a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.signUp}>Sign up</a></li>
               <li><a className="transition-colors hover:text-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-300" href={links.company} {...externalLinkProps}>SENATH Ltd</a></li>
@@ -85,9 +90,9 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ compact = false }) => {
 
           <div>
             <h2 className="text-sm font-semibold text-white">Contact Us</h2>
-            <p className="mt-4 text-sm text-slate-400">
-              Contact details coming soon.
-            </p>
+            <a href={links.support} className="mt-4 inline-block text-sm text-brand-300 underline underline-offset-4 hover:text-white">
+              Submit a support request
+            </a>
             <a
               href={links.linkedin}
               {...externalLinkProps}

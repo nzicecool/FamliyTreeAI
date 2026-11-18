@@ -104,6 +104,14 @@ All AI calls run server-side. Provider keys never reach the browser.
 
 ## Project Layout
 
+### Support form
+- Public `/support` is available without signing in; full and compact footers link to it.
+- `POST /api/support/contact` validates and forwards tickets server-side to GrowthFlowAI `/api/v1/tickets`.
+- Development uses `GROWTHFLOWAI_API_KEY_DEV`; production requires `GROWTHFLOWAI_API_KEY_PROD` and never falls back to development.
+- No attachments are offered until the external ticket API supports a documented upload contract.
+- Basic per-process IP/email rate limiting, honeypot, and browser origin checks protect submissions. Distributed spam protection would require a shared limiter or CAPTCHA.
+- Run `npx tsx --test tests/support.test.ts` for isolated support-route checks without sending real tickets.
+
 - `index.html`, `index.tsx` — Vite entry. Sets up `<ClerkProvider>` and routes `/sso-callback` to Clerk's redirect handler.
 - `App.tsx` — Main UI shell, sidebar nav (collapsible, persisted in localStorage `familytree:sidebar-open`), error boundary, tree state.
 - `components/` — TreeVisualizer, EditorPanel, SmartAdd, LoginScreen, FamilyGate, FamilyOnboarding, FamilyManager, NarrativeView, SettingsView. InviteManager is a retired app-wide UI, no longer routed.

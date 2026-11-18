@@ -4,6 +4,7 @@ import App from './App';
 import { ClerkProvider, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import { captureInvitation } from './services/familyService';
 import { FAQPage } from './components/FAQPage';
+import { SupportPage } from './components/SupportPage';
 
 captureInvitation();
 
@@ -41,7 +42,9 @@ function Root() {
   );
 }
 
-if (window.location.pathname.replace(/\/$/, '') === '/faq') {
+if (window.location.pathname.replace(/\/$/, '') === '/support') {
+  root.render(<SupportPage />);
+} else if (window.location.pathname.replace(/\/$/, '') === '/faq') {
   root.render(<FAQPage />);
 } else if (!PUBLISHABLE_KEY) {
   root.render(
