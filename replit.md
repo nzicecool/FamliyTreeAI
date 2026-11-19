@@ -102,6 +102,16 @@ All AI calls run server-side. Provider keys never reach the browser.
 - Decryption only happens at one place in the codebase: inside the `/api/ai/*` handler, after Clerk authentication, immediately before the LLM call. `GET /api/settings` only checks ciphertext non-null and never touches the master key.
 - Stored format: `v1:<iv_b64>:<authTag_b64>:<ciphertext_b64>`. Any value that fails to decrypt (tampered, wrong AAD, legacy plaintext) is treated as "not configured" and the dispatcher falls back to Gemini.
 
+## Family connections and voice memories
+- Family & access supports private, hashed 14-day link invitations, optionally bound to a discoverable target family. Accepting does not grant membership. Private families are reachable only through explicitly exchanged invitations.
+- Owners select their own people and explicit minimal sharing snapshots. Both owners must approve the same version; editing resets approvals. Existing trees are never merged or synchronised, and remote person IDs are not exposed.
+- Either owner can remove a connection or disconnect the families. Deleting a local person permanently revokes its connections. Member views refresh every 15 seconds and on focus.
+- Voice recordings live beside existing person documents: up to 180 seconds and 10 MiB, with server-side format/duration/byte validation. Existing certificate storage is unchanged.
+- New audio bytes use private App Storage, never PostgreSQL/base64 or public files. Configure a default bucket in App Storage, or optional server-only `VOICE_STORAGE_BUCKET_ID_DEV` / `VOICE_STORAGE_BUCKET_ID_PROD`. Development/production object prefixes are always separate.
+- Every audio list, upload, range download, and delete is authenticated and scoped to the active family's membership. Linking families never shares audio or certificates.
+- Pending/failed object deletions remain in metadata for the 60-second cleanup retry; deleted-person audio is immediately inaccessible. Storage errors are explicit and never reported as a saved recording.
+- `npx tsx --test tests/connectionsVoices.test.ts` exercises real PostgreSQL isolation with injected private storage. It does not replace a live App Storage upload check.
+
 ## Product events
 - GrowthFlowAI product events use only `GROWTHFLOWAI_FT_API_KEY_DEV` in development and `GROWTHFLOWAI_FT_API_KEY_PROD` in production. These are separate from support keys; never fall back between environments.
 - Visitors must enable analytics in Consentry. No preference, rejection, invalid storage, or later revocation means subsequent requests carry no analytics permission.

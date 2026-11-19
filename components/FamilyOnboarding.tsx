@@ -41,6 +41,7 @@ function normalizedToken(value: string) {
 export const FamilyOnboarding: React.FC<FamilyOnboardingProps> = ({
   context, onChanged, onSignOut, onCancel,
 }) => {
+  const hasPendingFamilyLink = typeof window !== 'undefined' && Boolean(window.sessionStorage.getItem('familytree:familyLink'));
   const { getToken } = useAuth();
   const [panel, setPanel] = useState<Panel>(() => pendingInvitationToken() || context.invitations.length ? 'join' : 'choose');
   const [localContext, setLocalContext] = useState(context);
@@ -227,6 +228,12 @@ export const FamilyOnboarding: React.FC<FamilyOnboardingProps> = ({
             </p>
           </div>
         </div>
+
+        {hasPendingFamilyLink && (
+          <div role="status" className="mb-6 rounded-xl border border-sky-300/25 bg-sky-950/30 px-4 py-3 text-sm leading-6 text-sky-100" data-testid="notice-pending-family-link">
+            Choose or create the family you want to connect first. After entering that family, open <strong>Family &amp; access</strong> to review and explicitly accept the private link. Nothing is accepted automatically.
+          </div>
+        )}
 
         {(pageError || notice) && (
           <div role={pageError ? 'alert' : 'status'} className={`mb-5 flex items-start justify-between gap-4 rounded-xl border px-4 py-3 text-sm ${pageError ? 'border-rose-400/30 bg-rose-950/30 text-rose-200' : 'border-emerald-400/25 bg-emerald-950/25 text-emerald-200'}`}>

@@ -7,6 +7,13 @@ import { FAQPage } from './components/FAQPage';
 import { SupportPage } from './components/SupportPage';
 
 captureInvitation();
+const familyLinkToken = new URL(window.location.href).searchParams.get('familyLink');
+if (familyLinkToken) {
+  window.sessionStorage.setItem('familytree:familyLink', familyLinkToken);
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete('familyLink');
+  window.history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+}
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 

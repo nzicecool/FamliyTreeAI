@@ -11,6 +11,8 @@ import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from 
 import { requireClerkKey } from './clerkConfig';
 import { registerSupportRoutes } from './server/support';
 import { createProductEvents } from './server/productEvents';
+import { ensureFamilyLinksSchema, registerFamilyLinkRoutes } from './server/familyLinks';
+import { cleanupVoiceObjects, ensureVoiceSchema, registerVoiceRoutes } from './server/voices';
 
 const BYO_PROVIDERS = ['openai', 'anthropic', 'glm', 'kimi'] as const;
 type BYOProvider = typeof BYO_PROVIDERS[number];
@@ -313,6 +315,8 @@ async function startServer() {
   };
 
   app.post('/api/product-events/session', authenticate, productEvents.sessionHandler);
+  registerFamilyLinkRoutes(app, pool, authenticate);
+  registerVoiceRoutes(app, pool, authenticate);
 
   registerFamilyRoutes(app, pool, authenticate, async (userId) => {
     if (!clerkClient) throw new Error('Clerk is not configured.');
@@ -423,15 +427,26 @@ async function startServer() {
   app.delete('/api/tree/delete-person/:id', authenticate, async (req: any, res) => {
     const userId = req.treeUserId;
     const personId = req.params.id;
+    const db = await pool.connect();
     try {
-      await pool.query(
+      await db.query('BEGIN');
+      await db.query(
         'DELETE FROM people WHERE user_id = $1 AND id = $2',
         [userId, personId]
       );
+      await db.query(`UPDATE family_connections c SET revoked=TRUE FROM family_links l,families f
+        WHERE c.link_id=l.id AND f.storage_user_id=$1
+        AND ((l.family_a=f.id AND c.person_a->>'personId'=$2)
+          OR (l.family_b=f.id AND c.person_b->>'personId'=$2))`, [userId, personId]);
+      await db.query(`UPDATE voice_memories SET status='deleting' WHERE user_id=$1 AND person_id=$2`, [userId, personId]);
+      await db.query('COMMIT');
       res.json({ success: true });
     } catch (error: any) {
+      await db.query('ROLLBACK');
       console.error('Delete person error:', error);
       res.status(500).json({ error: error.message });
+    } finally {
+      db.release();
     }
   });
 
@@ -907,6 +922,13 @@ but you may add general historical context if a date is provided.
   try {
     await ensureSchema();
     await ensureFamilySchema(pool);
+    await ensureFamilyLinksSchema(pool);
+    await ensureVoiceSchema(pool);
+    // Retry failed object deletion and remove audio belonging to deleted people.
+    const voiceCleanup = setInterval(() => {
+      void cleanupVoiceObjects(pool).catch(() => console.warn('Audio cleanup will retry.'));
+    }, 60_000);
+    voiceCleanup.unref();
     console.log('Postgres schema ready.');
   } catch (err: any) {
     console.error('Postgres schema bootstrap failed:', err.message);

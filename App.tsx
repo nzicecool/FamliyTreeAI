@@ -73,6 +73,14 @@ const FamilyTreeApp: React.FC<{
   const { getToken } = useAuth();
   const { signOut } = useClerk();
   const [dataError, setDataError] = useState('');
+  const [showFamilyLinkNotice, setShowFamilyLinkNotice] = useState(() => (
+    typeof window !== 'undefined' && Boolean(window.sessionStorage.getItem('familytree:familyLink'))
+  ));
+  useEffect(() => {
+    const clearNotice = () => setShowFamilyLinkNotice(false);
+    window.addEventListener('familytree:family-link-cleared', clearNotice);
+    return () => window.removeEventListener('familytree:family-link-cleared', clearNotice);
+  }, []);
   
   // Tree State
   const [treeData, setTreeData] = useState<TreeData | null>(null);
@@ -473,6 +481,15 @@ const FamilyTreeApp: React.FC<{
         </header>
 
         {dataError && <p role="alert" className="bg-rose-950 px-6 py-2 text-sm text-rose-200">{dataError}</p>}
+        {showFamilyLinkNotice && (
+          <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-300/20 bg-sky-950/30 px-5 py-3 text-xs leading-5 text-sky-100 sm:px-6" data-testid="notice-pending-family-link">
+            <span>Private family link received. Choose the family you intend to connect, then review and explicitly accept it in Family &amp; access. Nothing is accepted automatically.</span>
+            <div className="flex shrink-0 gap-2">
+              <button type="button" onClick={onBrowse} className="rounded-lg border border-sky-300/25 px-3 py-1.5 font-semibold hover:bg-sky-300/10" data-testid="button-choose-family-for-link">Choose family</button>
+              <button type="button" onClick={() => setActiveView('family')} className="rounded-lg bg-sky-300 px-3 py-1.5 font-semibold text-slate-950 hover:bg-sky-200" data-testid="button-review-family-link">Family &amp; access</button>
+            </div>
+          </div>
+        )}
         <div className="flex-1 overflow-hidden p-4 sm:p-6 relative">
              {activeView === 'tree' && Object.keys(treeData.people).length === 0 && (
                <div className="h-full flex flex-col items-center justify-center text-center gap-4">

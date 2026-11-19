@@ -3,6 +3,8 @@ import { useAuth } from '@clerk/clerk-react';
 import { Person, Gender } from '../types';
 import { aiService } from '../services/aiService';
 import { DocumentsSection } from './DocumentsSection';
+import { PersonConnections } from './PersonConnections';
+import { VoiceMemoriesSection } from './VoiceMemoriesSection';
 import { MarriagesSection } from './MarriagesSection';
 import { Wand2, Save, X, Loader2, Trash2, Camera, Upload, Network } from 'lucide-react';
 
@@ -113,7 +115,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="person-record-form" onSubmit={handleSubmit} className="space-y-6">
         
         {/* Photo Upload Section */}
         <div className="flex flex-col items-center gap-3">
@@ -321,8 +323,16 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
            {bioError && <p className="text-xs text-red-400 mt-1">{bioError}</p>}
         </div>
 
-        {/* Documents — only for saved persons */}
-        {person && <DocumentsSection personId={person.id} />}
+      </form>
+      <div className="mt-6 space-y-6">
+        {/* Independent attachment forms must not be nested in the person form. */}
+        {person && (
+          <>
+            <DocumentsSection personId={person.id} />
+            <PersonConnections personId={person.id} />
+            <VoiceMemoriesSection personId={person.id} />
+          </>
+        )}
 
         {/* Actions */}
         <div className="pt-4 flex items-center gap-3 border-t border-slate-700">
@@ -351,13 +361,14 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({ person, onSave, onDele
           )}
           <button
             type="submit"
+            form="person-record-form"
             className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <Save size={18} />
             Save Record
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

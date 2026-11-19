@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Family, FamilyDetails, FamilyInput } from '../familyTypes';
 import { familyService } from '../services/familyService';
+import { FamilyLinksSection } from './FamilyLinksSection';
 
 interface FamilyManagerProps {
   family: Family;
@@ -227,6 +228,8 @@ export const FamilyManager: React.FC<FamilyManagerProps> = ({ family, onChanged,
             </div>
           </div>
         </section>
+
+        <FamilyLinksSection family={family} />
 
         {family.role === 'owner' && (
           <section className={`${cardClass} mb-6 p-5 sm:p-7`} aria-labelledby="family-settings-title">
