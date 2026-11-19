@@ -11,6 +11,7 @@ import { ensureFamilySchema, familyScopeMiddleware, registerFamilyRoutes } from 
 import { requireClerkKey } from './clerkConfig';
 import { registerSupportRoutes } from './server/support';
 import { createProductEvents } from './server/productEvents';
+import { createAuthEventHandler, ensureAuthEventsSchema, trackingIdentity } from './server/authEvents';
 import { ensureFamilyLinksSchema, registerFamilyLinkRoutes } from './server/familyLinks';
 import { cleanupVoiceObjects, ensureVoiceSchema, registerVoiceRoutes } from './server/voices';
 
@@ -288,13 +289,16 @@ async function startServer() {
   const PORT = 5000;
 
   app.use(cors());
-  const productEvents = createProductEvents();
+  const secretKey = requireClerkKey(process.env, process.env.NODE_ENV === 'production', 'secret');
+  const clerkClient = secretKey ? createClerkClient({ secretKey }) : null;
+  const loadTrackingIdentity = async (userId: string) => {
+    if (!clerkClient) throw new Error('Clerk is not configured.');
+    return trackingIdentity(await clerkClient.users.getUser(userId));
+  };
+  const productEvents = createProductEvents({ loadContact: loadTrackingIdentity });
   app.use(productEvents.middleware);
   registerSupportRoutes(app);
   app.use(express.json({ limit: '10mb' }));
-
-  const secretKey = requireClerkKey(process.env, process.env.NODE_ENV === 'production', 'secret');
-  const clerkClient = secretKey ? createClerkClient({ secretKey }) : null;
 
   const authenticate = async (req: any, res: any, next: any) => {
     if (req.auth?.userId) return next();
@@ -314,7 +318,16 @@ async function startServer() {
     }
   };
 
-  app.post('/api/product-events/session', authenticate, productEvents.sessionHandler);
+  app.post('/api/product-events/session', authenticate, createAuthEventHandler({
+    pool, environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    configured: productEvents.configured,
+    loadIdentity: loadTrackingIdentity,
+    loadSession: async id => {
+      if (!clerkClient) throw new Error('Clerk is not configured.');
+      return clerkClient.sessions.getSession(id);
+    },
+    send: productEvents.send,
+  }));
   registerFamilyLinkRoutes(app, pool, authenticate);
   registerVoiceRoutes(app, pool, authenticate);
 
@@ -924,6 +937,7 @@ but you may add general historical context if a date is provided.
     await ensureFamilySchema(pool);
     await ensureFamilyLinksSchema(pool);
     await ensureVoiceSchema(pool);
+    await ensureAuthEventsSchema(pool);
     // Retry failed object deletion and remove audio belonging to deleted people.
     const voiceCleanup = setInterval(() => {
       void cleanupVoiceObjects(pool).catch(() => console.warn('Audio cleanup will retry.'));

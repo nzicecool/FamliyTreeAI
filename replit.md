@@ -116,9 +116,12 @@ All AI calls run server-side. Provider keys never reach the browser.
 - GrowthFlowAI product events use only `GROWTHFLOWAI_FT_API_KEY_DEV` in development and `GROWTHFLOWAI_FT_API_KEY_PROD` in production. These are separate from support keys; never fall back between environments.
 - Visitors must enable analytics in Consentry. No preference, rejection, invalid storage, or later revocation means subsequent requests carry no analytics permission.
 - Successful allowlisted family, person record, AI, and support operations emit server-side events. `person_record_saved` includes relationship-maintenance writes; it is not a unique count of people created.
-- `app_session_started` is emitted once per Clerk session/browser tab, with a bounded 24-hour server deduplication window. It is not a verified new-account/signup event.
-- Payloads contain the app, environment and (when authenticated) a SHA-256 pseudonymous user ID only. No contact creation/scoring by email: emails, names, family IDs, record content, AI prompts and support messages are excluded.
-- Delivery is bounded, best-effort and non-blocking for operations. Failures are logged without payloads; no durable queue or automatic operation-event retries.
+- Consented authenticated events include the verified email and first/last name fetched from Clerk on the server, in GrowthFlowAI's top-level `contactEmail` / `contactName` fields. This enables contact association; unverified emails, browser-provided identity, and placeholder contact details are never sent. User details are not copied into the local event ledger.
+- `user_signed_up` records a real Clerk account creation, once per account created after tracking was enabled for that environment. `user_signed_in` records creation of a verified active Clerk session, once per new session (including the initial signup session). Their `occurredAt` timestamps come from Clerk, not browser assertions.
+- Historical accounts are not backfilled as signups, and reopening a pre-existing session is not mislabelled a new login. `app_session_started` remains a separate first-consented app-session signal.
+- Authentication delivery claims persist in PostgreSQL with environment-specific unique hashed keys, preventing duplicates across refreshes, tabs, restarts, and instances. Because GrowthFlowAI does not deduplicate, an ambiguous/failed send is marked `unconfirmed` and is not automatically replayed; acceptance failure does not undo sign-in.
+- Event metadata includes source `replit`, app, environment, and a SHA-256 pseudonymous user ID. Family IDs, private record content, documents/audio, AI prompts, and support message bodies remain excluded.
+- Delivery is bounded, best-effort and non-blocking for operations. Failures are logged without personal payloads; no automatic operation-event retries.
 - `npx tsx --test tests/productEvents.test.ts tests/support.test.ts` checks consent, key separation, success filtering, session deduplication and delivery errors without real submissions.
 
 ## Project Layout

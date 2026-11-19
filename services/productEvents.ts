@@ -20,7 +20,7 @@ export function observeAppSession(getToken: () => Promise<string | null>, sessio
   let busy = false;
   let completed = false;
   let retryAfter = 0;
-  const storageKey = `familytree:analytics-session:${sessionId}`;
+  const storageKey = `familytree:analytics-session:v2:${sessionId}`;
   const attempt = async () => {
     if (stopped || busy || completed || Date.now() < retryAfter || !analyticsConsentGranted()) return;
     try {
@@ -35,6 +35,7 @@ export function observeAppSession(getToken: () => Promise<string | null>, sessio
         headers: { Authorization: `Bearer ${token}`, ...productAnalyticsHeaders() },
       });
       if (response.ok) {
+        if (response.status === 202) console.warn('Some authentication events were not confirmed by GrowthFlowAI. Automatic replay is disabled to prevent duplicates.');
         completed = true;
         try { sessionStorage.setItem(storageKey, '1'); } catch { /* Storage can be disabled. */ }
       } else {

@@ -79,28 +79,27 @@ test('only successful allowlisted operations with analytics consent produce even
   await fetch(`${base}/api/tree/save-person`, { method: 'POST', headers: { 'X-Product-Analytics-Consent': 'granted' } });
   assert.equal(received.length, 1);
   assert.equal(received[0].eventName, 'person_record_saved');
-  assert.deepEqual(Object.keys(received[0].eventData).sort(), ['application', 'environment', 'userId']);
+  assert.deepEqual(Object.keys(received[0].eventData).sort(), ['application', 'environment', 'source', 'userId']);
 });
 
-test('session tracking requires identity and consent, and deduplicates concurrent session requests', async () => {
-  let deliveries = 0;
+test('authenticated operations attach trusted contact details using the documented top-level fields', async () => {
+  const received: any[] = [];
   const events = createProductEvents({
     env: { GROWTHFLOWAI_FT_API_KEY_DEV: 'fixture' },
-    fetch: (async () => { deliveries++; return Response.json({ success: true }); }) as typeof fetch,
+    loadContact: async id => {
+      assert.equal(id, 'clerk-fixture');
+      return { email: 'verified@example.invalid', name: 'Verified Fixture' };
+    },
+    fetch: (async (_url, init) => {
+      received.push(JSON.parse(init!.body as string));
+      return Response.json({ success: true });
+    }) as typeof fetch,
   });
-  const run = async (consent: boolean, auth?: object) => {
-    let status = 0;
-    await events.sessionHandler(
-      { get: () => consent ? 'granted' : undefined, auth } as any,
-      { sendStatus: (value: number) => { status = value; } } as any, () => {},
-    );
-    return status;
-  };
-  assert.equal(await run(false), 204);
-  assert.equal(await run(true), 401);
-  const auth = { userId: 'fixture-user', sessionId: 'fixture-session' };
-  assert.deepEqual(await Promise.all([run(true, auth), run(true, auth)]), [204, 204]);
-  assert.equal(deliveries, 1);
+  assert.equal(await events.send('person_record_saved', 'clerk-fixture'), true);
+  assert.equal(received[0].contactEmail, 'verified@example.invalid');
+  assert.equal(received[0].contactName, 'Verified Fixture');
+  assert.equal(received[0].eventData.contactEmail, undefined);
+  assert.equal(received[0].eventData.source, 'replit');
 });
 
 test('browser consent headers default to off and follow the actual analytics preference', t => {

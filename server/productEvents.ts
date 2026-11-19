@@ -18,6 +18,7 @@ const operations: [string, RegExp, string][] = [
 
 export function createProductEvents(options: {
   env?: NodeJS.ProcessEnv; fetch?: typeof fetch; warn?: (message: string) => void;
+  loadContact?: (userId: string) => Promise<{ email?: string; name?: string }>;
 } = {}) {
   const env = options.env ?? process.env;
   const request = options.fetch ?? fetch;
@@ -25,9 +26,8 @@ export function createProductEvents(options: {
   const production = env.NODE_ENV === 'production';
   const key = production ? env.GROWTHFLOWAI_FT_API_KEY_PROD : env.GROWTHFLOWAI_FT_API_KEY_DEV;
   let active = 0;
-  const sessions = new Map<string, number>();
 
-  async function send(eventName: string, userId?: string): Promise<boolean> {
+  async function send(eventName: string, userId?: string, contact?: { email?: string; name?: string }, details?: { occurredAt: string }): Promise<boolean> {
     if (!key) {
       warn('GrowthFlowAI product events are not configured for this environment.');
       return false;
@@ -39,16 +39,21 @@ export function createProductEvents(options: {
     }
     active += 1;
     try {
+      if (!contact && userId && options.loadContact) contact = await options.loadContact(userId);
       const response = await request(EVENT_URL, {
         method: 'POST',
         signal: AbortSignal.timeout(5000),
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({
           eventName,
+          ...(contact?.email ? { contactEmail: contact.email } : {}),
+          ...(contact?.name ? { contactName: contact.name } : {}),
           eventData: {
+            source: 'replit',
             application: 'FamilyTreeAI',
             environment: production ? 'production' : 'development',
             ...(userId ? { userId: createHash('sha256').update(`familytreeai:${userId}`).digest('hex') } : {}),
+            ...(details ? { occurredAt: details.occurredAt } : {}),
           },
         }),
       });
@@ -80,23 +85,5 @@ export function createProductEvents(options: {
     next();
   };
 
-  const sessionHandler: RequestHandler = async (req: any, res) => {
-    if (req.get('X-Product-Analytics-Consent') !== 'granted') return res.sendStatus(204);
-    if (!req.auth?.userId || !req.auth?.sessionId) return res.sendStatus(401);
-    if (!key) return res.sendStatus(503);
-    const time = Date.now();
-    for (const [id, expiry] of sessions) if (expiry <= time) sessions.delete(id);
-    const id = `${req.auth.userId}:${req.auth.sessionId}`;
-    if (sessions.has(id)) return res.sendStatus(204);
-    if (sessions.size >= 10000) return res.sendStatus(429);
-    // Reserve before awaiting delivery, so simultaneous mounts cannot duplicate it.
-    sessions.set(id, time + 24 * 60 * 60 * 1000);
-    if (!await send('app_session_started', req.auth.userId)) {
-      sessions.delete(id);
-      return res.sendStatus(502);
-    }
-    return res.sendStatus(204);
-  };
-
-  return { middleware, sessionHandler, send };
+  return { middleware, send, configured: Boolean(key) };
 }
